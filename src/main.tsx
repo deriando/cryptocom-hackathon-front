@@ -1,10 +1,28 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './index.css'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import Connect from "./Connect";
+import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+  },
+});
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Connect />,
+  },
+]);
+
+// edit the index.html build to include <noscript>
+ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline enableColorScheme />
+      <RouterProvider router={router} />
+    </ThemeProvider>
   </React.StrictMode>
-)
+);
