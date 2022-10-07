@@ -1,8 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import Connect from "./Connect";
+//import Connect from "./Connect";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import CWidget from "./page4";
+import Donation from "./page6";
 
 const darkTheme = createTheme({
   palette: {
@@ -11,9 +13,17 @@ const darkTheme = createTheme({
 });
 
 const router = createBrowserRouter([
-  {
+  /*{
     path: "/",
     element: <Connect />,
+  },*/
+  {
+    path: "/page4",
+    element: <CWidget />,
+  },
+  {
+    path: "/page6",
+    element: <Donation />,
   },
 ]);
 
