@@ -1,8 +1,10 @@
 import { createContext, useContext, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import "./App.css";
-import { Button } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { ethers } from "ethers";
+import * as React from "react";
+import { padding } from "@mui/system";
 
 // A Web3Provider wraps a standard Web3 provider, which is
 // what MetaMask injects as window.ethereum into each page
@@ -19,31 +21,28 @@ async function connectWallet() {
 const signer = provider.getSigner();
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <Button id="wallet-connect" onClick={connectWallet}>
-          Wallet Connect
-        </Button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
+    <Box
+      classes={"Donation"}
+      sx={{ bgcolor: "black", border: "2px solid white", marginTop: "20%" }}
+    >
+      <p>Donation Wallet</p>
+      <Box
+        classes={"crypto-wallet-view"}
+        sx={{
+          bgcolor: "silver",
+          border: "2px solid yellow",
+          width: "80%",
+          margin: "auto",
+        }}
+      >
+        <p>Insert CryptoWallet Here(Dropdown list)</p>
+      </Box>
+      <Box classes={"buttons"} sx={{ padding: "5px" }}>
+        <Button sx={{ margin: "auto" }}>Connect</Button>
+        <Button sx={{ margin: "auto" }}>Donate</Button>
+      </Box>
+    </Box>
   );
 }
 
