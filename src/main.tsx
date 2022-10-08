@@ -7,6 +7,7 @@ import CWidget from "./page4";
 import Donation from "./page6";
 import TesterCard from "./Test";
 import FirstTimerPage from "./FirstTimerPage";
+import ManagerPage from "./ManagerPage";
 
 const darkTheme = createTheme({
   palette: {
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
   {
     path: "/FirstTime",
     element: <FirstTimerPage />,
+  },
+  {
+    path: "/Manager",
+    element: <ManagerPage />,
   },
   {
     path: "/page4",
