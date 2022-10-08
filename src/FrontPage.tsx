@@ -62,10 +62,8 @@ function ConnectCard() {
 }
 
 function FrontPage() {
-  let card: any;
-  // @ts-ignore
-
   function logic() {
+    // @ts-ignore
     if (window.ethereum === null) {
       return <Typography>Please install MetaMask</Typography>;
     }

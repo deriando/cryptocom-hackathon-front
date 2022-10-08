@@ -17,6 +17,7 @@ function ManagerCreationCard() {
       console.log(data);
       //route to manager app
       await ECSInstance.setDDManager(data.contractAddress).then(() => {
+        //console.log(ECSInstance.DDManagerInstance?._directDonationManagerContract)
         nav("/Manager");
       });
     }
@@ -36,10 +37,8 @@ function ManagerCreationCard() {
 }
 
 function FirstTimerPage() {
-  let card: any;
-  // @ts-ignore
-
   function logic() {
+    // @ts-ignore
     if (window.ethereum === null) {
       return <Typography>Please install MetaMask</Typography>;
     }
