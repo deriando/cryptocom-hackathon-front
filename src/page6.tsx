@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import reactLogo from "./assets/react.svg";
 
-import { Box, Button } from "@mui/material";
+import { Box, Button, Card } from "@mui/material";
 import { ethers } from "ethers";
 import * as React from "react";
 import { padding } from "@mui/system";
@@ -22,9 +22,15 @@ const signer = provider.getSigner();
 
 function App() {
   return (
-    <Box
+    <Card
       classes={"Donation"}
-      sx={{ bgcolor: "black", border: "2px solid white", marginTop: "20%" }}
+      sx={{
+        marginTop: "20%",
+        width: "50%",
+        marginLeft: "25%",
+        alignItems: "center",
+        textAlign: "center",
+      }}
     >
       <p>Donation Wallet</p>
       <Box
@@ -42,7 +48,7 @@ function App() {
         <Button sx={{ margin: "auto" }}>Connect</Button>
         <Button sx={{ margin: "auto" }}>Donate</Button>
       </Box>
-    </Box>
+    </Card>
   );
 }
 

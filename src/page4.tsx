@@ -4,6 +4,9 @@ import reactLogo from "./assets/react.svg";
 import {
   Box,
   Button,
+  Card,
+  CardActionArea,
+  Container,
   Divider,
   List,
   ListItemButton,
@@ -29,48 +32,49 @@ const signer = provider.getSigner();
 
 function App() {
   return (
-    <Box
+    <Card
       classes={"Card-Widget"}
-      sx={{ bgcolor: "black", border: "2px solid white", marginTop: "20%" }}
+      sx={{
+        marginTop: "20%",
+        alignItems: "center",
+        textAlign: "center",
+        width: "50%",
+        marginLeft: "25%",
+      }}
     >
       <p>Card Widget</p>
-      <Box
+      <Container
         classes={"card-list-view"}
         sx={{
-          bgcolor: "purple",
-          border: "2px solid yellow",
           width: "80%",
           margin: "auto",
         }}
       >
-        <p>Insert List of Card View here(Widget)</p>
-        <Box
-          classes={"Widget-Box"}
-          sx={{
-            bgcolor: "navy",
-            border: "2px solid red",
-            width: "60%",
-            margin: "auto",
-            marginBottom: "20px",
-            padding: "10px",
-          }}
-        >
-          <List sx={{ textAlign: "left" }}>
+        <List sx={{ textAlign: "left", maxHeight: "60%", overflow: "auto" }}>
+          <CardActionArea>
             <ListItemButton>
-              <ListItemText primary="Etherium"></ListItemText>
+              <Card sx={{ width: "100%", marginTop: "2px" }}>
+                <ListItemText
+                  primary="Etherium"
+                  sx={{ marginLeft: "20px" }}
+                ></ListItemText>
+              </Card>
             </ListItemButton>
             <ListItemButton>
               <ListItemText primary="DogeCoin"></ListItemText>
             </ListItemButton>
-          </List>
-        </Box>
-      </Box>
+            <ListItemButton>
+              <ListItemText primary="Bitcoin"></ListItemText>
+            </ListItemButton>
+          </CardActionArea>
+        </List>
+      </Container>
       <Box classes={"buttons"} sx={{ padding: "5px" }}>
         <Button sx={{ padding: "30px" }}>Delete</Button>
         <Button sx={{ padding: "30px" }}>Modify</Button>
         <Button sx={{ padding: "30px" }}>Create New</Button>
       </Box>
-    </Box>
+    </Card>
   );
 }
 
