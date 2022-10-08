@@ -13,7 +13,6 @@ function ConnectCard() {
   async function connectWallet() {
     // A Web3Provider wraps a standard Web3 provider, which is
     // what MetaMask injects as window.ethereum into each page
-    // @ts-ignore window.ethereum type not available
     const provider = new ethers.providers.Web3Provider(window.ethereum);
 
     // MetaMask requires requesting permission to connect users accounts
@@ -62,9 +61,6 @@ function ConnectCard() {
 }
 
 function FrontPage() {
-  let card: any;
-  // @ts-ignore
-
   function logic() {
     if (window.ethereum === null) {
       return <Typography>Please install MetaMask</Typography>;

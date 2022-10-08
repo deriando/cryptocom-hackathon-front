@@ -18,9 +18,6 @@ function ManagerCreationCard() {
 }
 
 function ManagerPage() {
-  let card: any;
-  // @ts-ignore
-
   function logic() {
     if (window.ethereum === null) {
       return <Typography>Please install MetaMask</Typography>;

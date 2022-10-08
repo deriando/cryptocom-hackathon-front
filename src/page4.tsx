@@ -18,7 +18,6 @@ import { padding } from "@mui/system";
 
 // A Web3Provider wraps a standard Web3 provider, which is
 // what MetaMask injects as window.ethereum into each page
-// @ts-ignore window.ethereum type not available
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 
 // MetaMask requires requesting permission to connect users accounts
@@ -44,7 +43,7 @@ function App() {
     >
       <p>Card Widget</p>
       <Container
-        classes={"card-list-view"}
+        className="card-list-view"
         sx={{
           width: "80%",
           margin: "auto",

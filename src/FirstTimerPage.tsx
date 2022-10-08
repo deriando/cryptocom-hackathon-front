@@ -36,9 +36,6 @@ function ManagerCreationCard() {
 }
 
 function FirstTimerPage() {
-  let card: any;
-  // @ts-ignore
-
   function logic() {
     if (window.ethereum === null) {
       return <Typography>Please install MetaMask</Typography>;
