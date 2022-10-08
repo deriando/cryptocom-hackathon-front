@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-//import Connect from "./Connect";
+import Connect from "./Connect";
+import ErrorPage from "./error-page";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import CWidget from "./page4";
@@ -16,10 +17,11 @@ const darkTheme = createTheme({
 });
 
 const router = createBrowserRouter([
-  /*{
+  {
     path: "/",
     element: <Connect />,
-  },*/
+    errorElement: <ErrorPage />,
+  },
   {
     path: "/FirstTime",
     element: <FirstTimerPage />,
