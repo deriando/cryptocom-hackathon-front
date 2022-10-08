@@ -1,10 +1,20 @@
 import { createContext, useContext, useState } from "react";
 import reactLogo from "./assets/react.svg";
 
-import { Box, Button, Card } from "@mui/material";
+import {
+  Box,
+  Button,
+  Card,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  SelectChangeEvent,
+  TextField,
+} from "@mui/material";
 import { ethers } from "ethers";
 import * as React from "react";
 import { padding } from "@mui/system";
+import { alignProperty } from "@mui/material/styles/cssUtils";
 
 // A Web3Provider wraps a standard Web3 provider, which is
 // what MetaMask injects as window.ethereum into each page
@@ -21,6 +31,12 @@ async function connectWallet() {
 const signer = provider.getSigner();
 
 function App() {
+  const [coin, setCoin] = React.useState("");
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setCoin(event.target.value as string);
+  };
+
   return (
     <Card
       classes={"Donation"}
@@ -33,17 +49,35 @@ function App() {
       }}
     >
       <p>Donation Wallet</p>
-      <Box
+      <Card
         classes={"crypto-wallet-view"}
         sx={{
-          bgcolor: "silver",
-          border: "2px solid yellow",
           width: "80%",
           margin: "auto",
         }}
       >
-        <p>Insert CryptoWallet Here(Dropdown list)</p>
-      </Box>
+        <FormControl sx={{ m: "1px", width: "300px" }}>
+          <TextField
+            id="Filled-basic"
+            label="Enter Amount"
+            variant="filled"
+            type="number"
+            inputProps={{ min: "0" }}
+          ></TextField>
+        </FormControl>
+        <FormControl sx={{ m: "1px", width: "150px" }}>
+          <TextField
+            label="Select Currency"
+            select
+            value={coin}
+            onChange={handleChange}
+          >
+            <MenuItem value={1}>Etheriunm</MenuItem>
+            <MenuItem value={2}>DogeCoin</MenuItem>
+            <MenuItem value={3}>Bitcoin</MenuItem>
+          </TextField>
+        </FormControl>
+      </Card>
       <Box classes={"buttons"} sx={{ padding: "5px" }}>
         <Button sx={{ margin: "auto" }}>Connect</Button>
         <Button sx={{ margin: "auto" }}>Donate</Button>
