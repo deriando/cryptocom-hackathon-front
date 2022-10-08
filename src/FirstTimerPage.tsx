@@ -2,19 +2,26 @@ import { createContext, useContext, useState } from "react";
 import { Box, Button, Card, CardHeader, Typography } from "@mui/material";
 import { ethers } from "ethers";
 
+import { useNavigate } from "react-router-dom";
 import EventControllerSingleton from "./logic/EventController";
 
-async function createManager() {
-  const ECSInstance = EventControllerSingleton.getInstance();
-  await ECSInstance.createMyDirectDonationManager();
-  const isCreated: boolean = await ECSInstance.myDirectDonationManagerExist();
-  if (isCreated) {
-    //route to manager app
-    console.log("route to manager");
-  }
-}
-
 function ManagerCreationCard() {
+  const nav = useNavigate();
+
+  async function createManager() {
+    const ECSInstance = EventControllerSingleton.getInstance();
+    const data = await ECSInstance.createMyDirectDonationManager();
+    let isCreated: boolean | null;
+    isCreated = await ECSInstance.myDirectDonationManagerExist();
+    if (isCreated === true) {
+      console.log(data);
+      //route to manager app
+      await ECSInstance.setDDManager(data.contractAddress).then(() => {
+        nav("/Manager");
+      });
+    }
+  }
+
   return (
     <Card sx={{ padding: "1em" }}>
       <Typography mb={"1em"}>

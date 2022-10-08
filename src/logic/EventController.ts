@@ -118,24 +118,39 @@ class EventController {
   }
 
   async getMyDirectDonationManager() {
-    return await (
-      this.DDMFactoryInstance as DirectDonationManagerFactoryInterface
-    ).getMyDirectDonationManager();
+    try {
+      const data = await (
+        this.DDMFactoryInstance as DirectDonationManagerFactoryInterface
+      ).getMyDirectDonationManager();
+      return {
+        contractAddress: data,
+      };
+    } catch (e) {
+      return {
+        errorMessage: e,
+      };
+    }
   }
 
   async createMyDirectDonationManager() {
-    const DDMFactoryJson = await DirectDonationManagerFactoryMeta;
-    const DDMFactoryIface = new ethers.utils.Interface(DDMFactoryJson.abi);
-
-    const tx = await (
-      this.DDMFactoryInstance as DirectDonationManagerFactoryInterface
-    ).createMyDirectDonationManager();
-    // const txReciept = tx.wait();
-    // const txLog = txReciept.logs[0];
-    // const eventLog = DDMFactoryIface.parseLog(txLog);
-    console.log(tx);
-    //! need to test for return before returning //
-    // return address of DDManager
+    try {
+      const DDMFactoryJson = await DirectDonationManagerFactoryMeta;
+      const DDMFactoryIface = new ethers.utils.Interface(DDMFactoryJson.abi);
+      const tx = await (
+        this.DDMFactoryInstance as DirectDonationManagerFactoryInterface
+      ).createMyDirectDonationManager();
+      const txReciept = await tx.wait();
+      const txLog = txReciept.logs[2];
+      const eventLog = DDMFactoryIface.parseLog(txLog);
+      return {
+        contractAddress: eventLog.args._contractAddress,
+        ownerAddress: eventLog.args._contractAddress,
+      };
+    } catch (e) {
+      return {
+        errorMessage: e,
+      };
+    }
   }
 
   // * Manager Page Function//

@@ -38,8 +38,13 @@ function ConnectCard() {
       });
 
       if (DDMExist === true) {
-        console.log("DMMexist");
+        ECSInstance.getMyDirectDonationManager().then((data) => {
+          ECSInstance.setDDManager(data.contractAddress as string).then(() => {
+            nav("/Manager");
+          });
+        });
       }
+
       if (DDMExist === false) {
         nav("/FirstTime");
       }
