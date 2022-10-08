@@ -1,12 +1,10 @@
 import { createContext, useContext, useState } from "react";
 import { Box, Button, Card, CardHeader, Typography } from "@mui/material";
 import { ethers } from "ethers";
-//@ts-ignore
 
 async function connectWallet() {
   // A Web3Provider wraps a standard Web3 provider, which is
   // what MetaMask injects as window.ethereum into each page
-  // @ts-ignore window.ethereum type not available
   const provider = new ethers.providers.Web3Provider(window.ethereum);
 
   // MetaMask requires requesting permission to connect users accounts
@@ -31,7 +29,6 @@ function ConnectWalletCard() {
 
 function Connect() {
   let card: any;
-  // @ts-ignore
   if (window.ethereum !== undefined) {
     card = <ConnectWalletCard />;
   } else {

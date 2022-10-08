@@ -25,10 +25,10 @@ const router = createBrowserRouter([
     path: "/Manager",
     element: <ManagerPage />,
   },
-  // {
-  //   path: "/page4",
-  //   element: <CWidget />,
-  // },
+  {
+    path: "/page4",
+    element: <CWidget />,
+  },
   {
     path: "/page6",
     element: <Donation />,
