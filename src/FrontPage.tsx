@@ -61,7 +61,7 @@ function ConnectCard() {
   );
 }
 
-function TesterCard() {
+function FrontPage() {
   let card: any;
   // @ts-ignore
 
@@ -86,4 +86,4 @@ function TesterCard() {
   );
 }
 
-export default TesterCard;
+export default FrontPage;
