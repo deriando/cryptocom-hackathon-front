@@ -5,6 +5,8 @@ import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import CWidget from "./page4";
 import Donation from "./page6";
+import TesterCard from "./Test";
+import FirstTimerPage from "./FirstTimerPage";
 
 const darkTheme = createTheme({
   palette: {
@@ -18,12 +20,20 @@ const router = createBrowserRouter([
     element: <Connect />,
   },*/
   {
+    path: "/FirstTime",
+    element: <FirstTimerPage />,
+  },
+  {
     path: "/page4",
     element: <CWidget />,
   },
   {
     path: "/page6",
     element: <Donation />,
+  },
+  {
+    path: "/test",
+    element: <TesterCard />,
   },
 ]);
 
