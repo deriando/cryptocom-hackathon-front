@@ -30,7 +30,7 @@ class DirectDonationManagerInterface {
   async createDirectDonation(
     this: DirectDonationManagerInterface,
     caller = this.defaultCaller
-  ): Promise<Transaction> {
+  ): Promise<any> {
     this._isContractSet();
     return await (this._directDonationManagerContract as Contract)
       .connect(caller)
@@ -39,9 +39,9 @@ class DirectDonationManagerInterface {
 
   async removeDirectDonation(
     this: DirectDonationManagerInterface,
-    key: number,
+    key: string,
     caller = this.defaultCaller
-  ): Promise<Transaction> {
+  ): Promise<any> {
     this._isContractSet();
     return await (this._directDonationManagerContract as Contract)
       .connect(caller)
@@ -54,9 +54,10 @@ class DirectDonationManagerInterface {
   ): Promise<Array<string>> {
     this._isContractSet();
     //! need to test functionality of returns from contract
-    return await (this._directDonationManagerContract as Contract)
+    const data = await (this._directDonationManagerContract as Contract)
       .connect(caller)
       .getDirectDonationList();
+    return data;
   }
 
   async getDirectDonationCount(

@@ -55,7 +55,7 @@ class EventController {
           caller as Signer,
           provider as providers.Provider
         );
-      DirectDonationManagerFactoryInstance.setContract(
+      await DirectDonationManagerFactoryInstance.setContract(
         import.meta.env.VITE_DIRECT_DONATION_FACTORY_ADDR
       );
       this.DDMFactoryInstance = DirectDonationManagerFactoryInstance;
@@ -79,7 +79,7 @@ class EventController {
         caller as Signer,
         provider as providers.Provider
       );
-      DirectDonationManagerInstance.setContract(managerAddress);
+      await DirectDonationManagerInstance.setContract(managerAddress);
       this.DDManagerInstance = DirectDonationManagerInstance;
     }
   }
@@ -100,7 +100,7 @@ class EventController {
         caller as Signer,
         provider as providers.Provider
       );
-      DirectDonationInstance.setContract(donationAddress);
+      await DirectDonationInstance.setContract(donationAddress);
       this.DirectDonationInstance = DirectDonationInstance;
     }
   }
@@ -139,9 +139,13 @@ class EventController {
       const tx = await (
         this.DDMFactoryInstance as DirectDonationManagerFactoryInterface
       ).createMyDirectDonationManager();
+      console.log(tx);
       const txReciept = await tx.wait();
+      console.log(txReciept);
       const txLog = txReciept.logs[2];
+      console.log(txLog);
       const eventLog = DDMFactoryIface.parseLog(txLog);
+      console.log(eventLog);
       return {
         contractAddress: eventLog.args._contractAddress,
         ownerAddress: eventLog.args._contractAddress,
@@ -153,242 +157,73 @@ class EventController {
     }
   }
 
-  // * Manager Page Function//
+  // * Manager Page Function //
 
-  //   this.purchaseGiftCard = async (ctx) => {
-  //     //getting api parameters from request body
-  //     const callingFields = ctx.request.body;
+  async createDirectDonation() {
+    try {
+      const DDManagerJson = await DirectDonationManagerMeta;
+      const DDManagerIface = new ethers.utils.Interface(DDManagerJson.abi);
+      const tx = await (
+        this.DDManagerInstance as DirectDonationManagerInterface
+      ).createDirectDonation();
+      console.log(tx);
+      const txReciept = await tx.wait();
+      console.log(txReciept);
+      const txLog = txReciept.logs[2];
+      console.log(txLog);
+      const eventLog = DDManagerIface.parseLog(txLog);
+      console.log(eventLog);
+      return {
+        managerAddress: eventLog.args.sender,
+        directDonationAddress: eventLog.args.key,
+      };
+    } catch (e) {
+      return {
+        errorMessage: e,
+      };
+    }
+  }
 
-  //     const giftCardAmount = callingFields.token_amount;
-  //     const denorminatedTokenAddress = callingFields.peg_token_address;
-  //     const userAddress = callingFields.user_address;
+  async removeDirectDonation(address: string) {
+    try {
+      const DDManagerJson = await DirectDonationManagerMeta;
+      const DDManagerIface = new ethers.utils.Interface(DDManagerJson.abi);
+      const tx = await (
+        this.DDManagerInstance as DirectDonationManagerInterface
+      ).removeDirectDonation(address);
+      console.log(tx);
+      const txReciept = await tx.wait();
+      console.log(txReciept);
+      const txLog = txReciept.logs[0];
+      console.log(txLog);
+      const eventLog = DDManagerIface.parseLog(txLog);
+      console.log(eventLog);
+      return {
+        managerAddress: eventLog.args.sender,
+        directDonationAddress: eventLog.args.key,
+      };
+    } catch (e) {
+      return {
+        errorMessage: e,
+      };
+    }
+  }
 
-  //     //using private key to create wallet instance
-  //     const userPrivateKey = callingFields.user_private_key;
-  //     const userWallet = new ethers.Wallet(userPrivateKey).connect(this.provider);
-
-  //     // setup interface to parse log datat
-  //     const ierc777Json= await IERC777Meta;
-  //     const ierc777Iface = new ethers.utils.Interface(ierc777Json.abi);
-
-  //     const giftCardFactoryJson = await GiftCardFactoryMeta;
-  //     const giftCardFactoryIface = new ethers.utils.Interface(giftCardFactoryJson.abi);
-
-  //     // core functions //
-  //     // create gift card contract
-  //     const giftCardFactoryInstance = new GiftCardFactoryManager(this.caller,this.provider);
-  //     await giftCardFactoryInstance.setContract(process.env.GIFTCARD_FACTORY);
-
-  //     const createGiftCardTx = await giftCardFactoryInstance.createGiftCard(denorminatedTokenAddress);
-  //     const createGiftCardTxReciept = await createGiftCardTx.wait();
-  //     const createGiftCardTxLogs = createGiftCardTxReciept.logs[2];
-  //     const createEventDecodeData = giftCardFactoryIface.parseLog(createGiftCardTxLogs);// .parseLog(createGiftCardTxLogs);
-  //    //console.log(createEventDecodeData);
-  //     const giftCardAddress = createEventDecodeData.args.giftCardAddress;
-  //     //console.log(giftCardAddress);
-
-  //     // mint to manager
-  //     const pegTokenInstance = new PegTokenManager(this.caller,this.provider);
-  //     await pegTokenInstance.setContract(denorminatedTokenAddress);
-
-  //     const mintTokenToCallerTx = await pegTokenInstance.mintTokensToCaller(giftCardAmount);
-  //     const mintTokenToCallerTxReciept = await mintTokenToCallerTx.wait();
-  //     const mintTokenToCallerTxLogs = mintTokenToCallerTxReciept.logs[0];
-  //     const mintEventDecodeData = ierc777Iface.parseLog(mintTokenToCallerTxLogs);
-  //     //console.log(mintEventDecodeData);
-
-  //     // operator send tokens to new gift card
-  //     const operatorSendTokenTx = await pegTokenInstance.operatorSendTokens(this.caller.address,giftCardAddress,giftCardAmount);
-  //     const operatorSendTokenTxReciept = await operatorSendTokenTx.wait();
-  //     const operatorSendTokenTxLogs = operatorSendTokenTxReciept.logs[0];
-  //     const sentEventDecodeData = ierc777Iface.parseLog(operatorSendTokenTxLogs);
-  //     //console.log(sentEventDecodeData);
-
-  //     // authorised new owner as operator
-  //     const giftCardInstance = new GiftCardManager(this.caller,this.provider,giftCardAddress);
-  //     await giftCardInstance.setContract(giftCardAddress);
-
-  //     const authoriseOperatorTx = await giftCardInstance.authoriseOperator(userAddress);
-  //     const authoriseOperatorTxReciept = await authoriseOperatorTx.wait();
-  //     const authoriseOperatorTxLogs = authoriseOperatorTxReciept.logs[0];
-  //     const authoriseEventDecodeData = ierc777Iface.parseLog(authoriseOperatorTxLogs);
-  //     //console.log(authoriseEventDecodeData);
-
-  //     ctx.body = {
-  //       "token_amount" : giftCardAmount,
-  //       "wallet_address" : userAddress,
-  //       "gift_card_address": giftCardAddress,
-  //       "message" : "new giftcard created and assigned to user",
-  //     }
-  //     ctx.status = 200;
-
-  //   };
-
-  //   this.transferGiftCard = async (ctx) => {
-  //     //getting api parameters from request body
-  //     const callingFields = ctx.request.body;
-  //     const newOwnerAddress = callingFields.new_owner_address;
-  //     const currentOwnerAddress  = callingFields.user_address;
-  //     //using private key to create wallet instance
-  //     const userPrivateKey = callingFields.user_private_key;
-  //     const userWallet = new ethers.Wallet(userPrivateKey).connect(this.provider);
-
-  //     //using giftCard address to instantiate pegTokenManager
-  //     const giftCardAddress = callingFields.gift_card_address;
-  //     const giftCardInstance = new GiftCardManager(this.caller,this.provider);
-  //     await giftCardInstance.setContract(giftCardAddress);
-
-  //     // setup interface to parse log data
-  //     const ierc777Json= await IERC777Meta;
-  //     const ierc777Iface = new ethers.utils.Interface(ierc777Json.abi);
-
-  //     // core function calls //
-
-  //     // get Token Peg of Giftcard to check user is the owner;
-  //     const pegTokenAddress = await giftCardInstance._giftCardContract.TokenAddress();
-  //     const pegTokenInstance = new PegTokenManager(this.caller,this.provider);
-  //     await pegTokenInstance.setContract(pegTokenAddress);
-
-  //     const isOperatorBool = await pegTokenInstance._currencyPegContract.isOperatorFor(currentOwnerAddress,giftCardAddress);
-
-  //     if (isOperatorBool){
-  //       //get address of tokenPeg from giftcard
-  //       const authoriseOperatorTx = await giftCardInstance.authoriseOperator(newOwnerAddress);
-  //       const authoriseOperatorTxReceipt = await authoriseOperatorTx.wait();
-  //       const authoriseOperatorTxLogs = authoriseOperatorTxReceipt.logs[0];
-  //       const authoriseEventDecodeData = ierc777Iface.parseLog(authoriseOperatorTxLogs);
-  //       console.log(authoriseEventDecodeData);
-
-  //       if (currentOwnerAddress !== newOwnerAddress){
-  //         const revokeOperatorTx = await giftCardInstance.revokeOperator(currentOwnerAddress);
-  //         const revokeOperatorTxReceipt = await revokeOperatorTx.wait();
-  //         const revokeOperatorTxLogs = revokeOperatorTxReceipt.logs[0];
-  //         const revokeEventDecodeData = ierc777Iface.parseLog(revokeOperatorTxLogs);
-  //         console.log(revokeEventDecodeData);
-  //       }
-
-  //       ctx.body = {
-  //         "new_owner_address" : newOwnerAddress,
-  //         "gift_card_address": giftCardAddress,
-  //         "message" : "gift card transferred",
-  //       }
-  //       ctx.status = 200;
-  //     }
-  //   };
-
-  //   this.topUpGiftCard = async (ctx) => {
-  //         //getting api parameters from request body
-  //         const callingFields = ctx.request.body;
-  //         const topUpAmount = callingFields.token_amount;
-  //         const userAddress  = callingFields.user_address;
-  //         //using private key to create wallet instance
-  //         const userPrivateKey = callingFields.user_private_key;
-  //         const userWallet = new ethers.Wallet(userPrivateKey).connect(this.provider);
-
-  //         //using giftCard address to instantiate pegTokenManager
-  //         const giftCardAddress = callingFields.gift_card_address;
-  //         const giftCardInstance = new GiftCardManager(this.caller,this.provider);
-  //         await giftCardInstance.setContract(giftCardAddress);
-
-  //         // setup interface to parse log data
-  //         const ierc777Json= await IERC777Meta;
-  //         const ierc777Iface = new ethers.utils.Interface(ierc777Json.abi);
-
-  //         //Core Functions//
-
-  //         // get Token Peg of Giftcard to check user is the owner;
-  //         const pegTokenAddress = await giftCardInstance._giftCardContract.TokenAddress();
-  //         const pegTokenInstance = new PegTokenManager(this.caller,this.provider);
-  //         await pegTokenInstance.setContract(pegTokenAddress);
-
-  //         const isOperatorBool = await pegTokenInstance._currencyPegContract.isOperatorFor(userAddress,giftCardAddress);
-
-  //         if( isOperatorBool){
-  //           //mint new token
-  //           const mintTokenToCallerTx = await pegTokenInstance.mintTokensToCaller(topUpAmount);
-  //           const mintTokenToCallerTxReciept = await mintTokenToCallerTx.wait();
-  //           const mintTokenToCallerTxLogs = mintTokenToCallerTxReciept.logs[0];
-  //           const mintEventDecodeData = ierc777Iface.parseLog(mintTokenToCallerTxLogs);
-  //           console.log(mintEventDecodeData);
-
-  //           //send tokens to top up gift card
-  //           const operatorSendTokenTx = await pegTokenInstance.operatorSendTokens(this.caller.address,giftCardAddress,topUpAmount);
-  //           const operatorSendTokenTxReciept = await operatorSendTokenTx.wait();
-  //           const operatorSendTokenTxLogs = operatorSendTokenTxReciept.logs[0];
-  //           const sentEventDecodeData = ierc777Iface.parseLog(operatorSendTokenTxLogs);
-  //           console.log(sentEventDecodeData);
-
-  //           ctx.body = {
-  //             "token_amount" : topUpAmount,
-  //             "gift_card_address": giftCardAddress,
-  //             "message" : "gift card topupped",
-  //           }
-  //           ctx.status = 200;
-
-  //         }
-
-  //   };
-
-  //   this.spendGiftCard = async (ctx) => {
-  //     //getting api parameters from request body
-  //     const callingFields = ctx.request.body;
-  //     const transferAmount = callingFields.token_amount;
-  //     const userAddress  = callingFields.user_address;
-  //     const recipentAddress = callingFields.recipent_address;
-  //     //using private key to create wallet instance
-  //     const userPrivateKey = callingFields.user_private_key;
-  //     const userWallet = new ethers.Wallet(userPrivateKey).connect(this.provider);
-
-  //     //using giftCard address to instantiate pegTokenManager
-  //     const giftCardAddress = callingFields.gift_card_address;
-  //     const giftCardInstance = new GiftCardManager(this.caller,this.provider);
-  //     await giftCardInstance.setContract(giftCardAddress);
-
-  //     // setup interface to parse log data
-  //     const ierc777Json= await IERC777Meta;
-  //     const ierc777Iface = new ethers.utils.Interface(ierc777Json.abi);
-
-  //     //Core Functions//
-
-  //     // get Token Peg of Giftcard to check user is the owner;
-  //     const pegTokenAddress = await giftCardInstance._giftCardContract.TokenAddress();
-  //     const pegTokenInstance = new PegTokenManager(this.caller,this.provider);
-  //     await pegTokenInstance.setContract(pegTokenAddress);
-
-  //     const isOperatorBool = await pegTokenInstance._currencyPegContract.isOperatorFor(userAddress,giftCardAddress);
-
-  //     if(isOperatorBool) {
-  //         // transfer token from gift card to address token value
-  //         const operatorSendTokenTx = await pegTokenInstance.operatorSendTokens(giftCardAddress,recipentAddress,transferAmount);
-  //         const operatorSendTokenTxReciept = await operatorSendTokenTx.wait();
-  //         const operatorSendTokenTxLogs = operatorSendTokenTxReciept.logs[0];
-  //         const sentEventDecodeData = ierc777Iface.parseLog(operatorSendTokenTxLogs);
-  //         console.log(sentEventDecodeData);
-
-  //         ctx.body = {
-  //           "token_amount" : transferAmount,
-  //           "gift_card_address": giftCardAddress,
-  //           "recipent_address": giftCardAddress,
-  //           "message" : "gift card's value spent",
-  //         }
-  //         ctx.status = 200;
-  //     }
-
-  //   };
-
-  //   this.createWallet = (ctx) => {
-  //     // All createRandom Wallets are generated from random mnemonics
-  //     let wallet = createNewWallet(this.provider);
-  //     ctx.body = {
-  //       "mnemonic" : wallet.mnemonic,
-  //       "address" : wallet.address,
-  //       "public_key" : wallet.publicKey,
-  //       "private_key" : wallet.privateKey
-
-  //     }
-  //     ctx.status = 200;
-
-  //   };
+  async getDirectDonationList() {
+    try {
+      //console.log(this.DDManagerInstance?._directDonationManagerContract);
+      const data = await (
+        this.DDManagerInstance as DirectDonationManagerInterface
+      ).getDirectDonationList();
+      return {
+        directDonationAddresses: data,
+      };
+    } catch (e) {
+      return {
+        errorMessage: e,
+      };
+    }
+  }
 }
 
 var EventControllerSingleton = (function () {
