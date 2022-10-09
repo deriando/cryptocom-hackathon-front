@@ -40,6 +40,7 @@ function useDDListData() {
 }
 
 function ManagerCreationCard() {
+  const nav = useNavigate();
   const ECSInstance = EventControllerSingleton.getInstance();
 
   const stateData = useDDListData();
@@ -106,7 +107,6 @@ function ManagerCreationCard() {
           <Button
             variant="outlined"
             sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
-            onClick={removeDirectDonation}
             disabled
           >
             Delete
@@ -140,6 +140,7 @@ function ManagerCreationCard() {
           <Button
             variant="outlined"
             sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
+            onClick={modifyDirectDonation}
           >
             Modify
           </Button>
@@ -166,7 +167,9 @@ function ManagerCreationCard() {
     console.log(data);
   }
 
-  async function modifyDirectDonation() {}
+  async function modifyDirectDonation() {
+    nav("/Donation");
+  }
 
   return (
     <Container>
