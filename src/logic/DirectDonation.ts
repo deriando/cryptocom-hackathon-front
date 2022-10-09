@@ -139,11 +139,20 @@ class DirectDonationInterface {
       .getAcceptedERC20List();
   }
 
+  async CustodianFeature(
+    this: DirectDonationInterface,
+    caller = this.defaultCaller
+  ): Promise<boolean> {
+    return await (this._directDonationContract as Contract)
+      .connect(caller)
+      .CustodianFeature();
+  }
+
   async setCustodianFeature(
     this: DirectDonationInterface,
     switchBool: boolean,
     caller = this.defaultCaller
-  ): Promise<Transaction> {
+  ): Promise<any> {
     this._isContractSet();
     return await (this._directDonationContract as Contract)
       .connect(caller)

@@ -168,7 +168,9 @@ function ManagerCreationCard() {
   }
 
   async function modifyDirectDonation() {
-    nav("/Donation");
+    ECSInstance.setDirectDonation(selectedIndex).then(() => {
+      nav(`/Donation/${selectedIndex}`);
+    });
   }
 
   return (

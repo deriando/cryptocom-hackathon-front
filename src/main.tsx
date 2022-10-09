@@ -35,7 +35,7 @@ const router = createBrowserRouter([
     element: <Donation />,
   },
   {
-    path: "/Donation",
+    path: "/Donation/:contractAddress",
     element: <DonationPage />,
   },
   {

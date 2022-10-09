@@ -215,8 +215,51 @@ class EventController {
       const data = await (
         this.DDManagerInstance as DirectDonationManagerInterface
       ).getDirectDonationList();
+      console.log(data);
       return {
         directDonationAddresses: data,
+      };
+    } catch (e) {
+      return {
+        errorMessage: e,
+      };
+    }
+  }
+
+  async setCustodianFeature(state: boolean) {
+    try {
+      const DirectDonationJson = await DirectDonationMeta;
+      const DirectDonationIface = new ethers.utils.Interface(
+        DirectDonationJson.abi
+      );
+      const tx = await (
+        this.DirectDonationInstance as DirectDonationInterface
+      ).setCustodianFeature(state);
+      console.log(tx);
+      const txReciept = await tx.wait();
+      console.log(txReciept);
+      const txLog = txReciept.logs[0];
+      console.log(txLog);
+      const eventLog = DirectDonationIface.parseLog(txLog);
+      console.log(eventLog);
+      return {
+        process: "completed",
+      };
+    } catch (e) {
+      return {
+        errorMessage: e,
+      };
+    }
+  }
+
+  async getCustodianFeature() {
+    try {
+      const data = await (
+        this.DirectDonationInstance as DirectDonationInterface
+      ).CustodianFeature();
+      console.log(data);
+      return {
+        custodianFeature: data,
       };
     } catch (e) {
       return {

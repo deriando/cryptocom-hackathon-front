@@ -12,110 +12,138 @@ import {
   List,
   ListItemButton,
   ListItemText,
+  ListItem,
   CardContent,
   TextField,
   Paper,
   CardActions,
   FormControlLabel,
 } from "@mui/material";
-import { ethers } from "ethers";
-import { redirect } from "react-router-dom";
-//@ts-ignore
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useNavigation, useParams } from "react-router-dom";
 import EventControllerSingleton from "./logic/EventController";
-import { executionAsyncResource } from "async_hooks";
-
-// function ConnectCard() {
-//   const nav = useNavigate();
-
-//   async function connectWallet() {
-//     // A Web3Provider wraps a standard Web3 provider, which is
-//     // what MetaMask injects as window.ethereum into each page
-//     const provider = new ethers.providers.Web3Provider(window.ethereum);
-
-//     // MetaMask requires requesting permission to connect users accounts
-//     await provider.send("eth_requestAccounts", []);
-//     const ECSInstance = EventControllerSingleton.getInstance();
-//     // The MetaMask plugin also allows signing transactions to
-//     // send ether and pay to change state within the blockchain.
-//     // For this, you need the account signer...
-//     const signer = provider.getSigner();
-//     ECSInstance.setProvider(provider);
-//     ECSInstance.setCaller(signer);
-
-//     let settingFactoryResolved: boolean = false;
-//     await ECSInstance.setDDMFactory().then(() => {
-//       settingFactoryResolved = true;
-//     });
-
-//     if (settingFactoryResolved) {
-//       let DDMExist: null | boolean = null;
-//       await ECSInstance.myDirectDonationManagerExist().then((x) => {
-//         DDMExist = x;
-//       });
-
-//       if (DDMExist === true) {
-//         ECSInstance.getMyDirectDonationManager().then((data) => {
-//           ECSInstance.setDDManager(data.contractAddress as string).then(() => {
-//             nav("/Manager");
-//           });
-//         });
-//       }
-
-//       if (DDMExist === false) {
-//         nav("/FirstTime");
-//       }
-//     }
-//   }
-
-//   return (
-//     <Card sx={{ padding: "1em" }}>
-//       <Typography mb={"1em"}>Connect your wallet</Typography>
-//       <Button variant="outlined" onClick={connectWallet}>
-//         <Typography>MetaMask</Typography>
-//       </Button>
-//     </Card>
-//   );
-// }
+import { truncate } from "fs";
 
 interface TokenListData {
-  tokenAddresses?: Array<string>;
+  tokenMetas?: Array<TokenMeta>;
   errorMessage?: any;
+}
+
+interface TokenMeta {
+  tokenAddress: string;
+  tokenSymbol: string;
+}
+
+interface PercentListData {
+  Allocations?: Array<Allocation>;
+  errorMessage?: any;
+}
+
+interface Allocation {
+  walletAddress: string;
+  percentValue: number;
 }
 
 function useTokenList() {
   const ECSInstance = EventControllerSingleton.getInstance();
-  const [stateData, setStateData] = useState<StateData | undefined>(undefined);
+  const [stateData, setStateData] = useState<TokenListData | undefined>(
+    undefined
+  );
   // async get TokenList
 
-  return { tokenAddresses: ["1", "2"] };
+  return {
+    tokenMetas: [
+      { tokenAddress: "0x000001", tokenSymbol: "TOK1" },
+      { tokenAddress: "0x000002", tokenSymbol: "TOK2" },
+    ],
+  };
   return stateData;
 }
 
-function usePrecentList(address: string) {
+function usePercentList(address: string) {
   const ECSInstance = EventControllerSingleton.getInstance();
-  const [stateData, setStateData] = useState<StateData | undefined>(undefined);
+  const [stateData, setStateData] = useState<PercentListData | undefined>(
+    undefined
+  );
   // async get TokenList
 
-  return { tokenAddresses: ["1", "2"] };
+  return {
+    Allocations: [
+      { walletAddress: "0x000001", percentValue: 10.0 },
+      { walletAddress: "0x000002", percentValue: 20.05 },
+    ],
+  };
   return stateData;
+}
+
+function useCustodianFeature() {
+  const ECSInstance = EventControllerSingleton.getInstance();
+  const [stateBool, setStateBool] = useState<boolean | undefined>(undefined);
+
+  ECSInstance.getCustodianFeature()
+    .then((data) => {
+      console.log(data);
+      setStateBool(data.custodianFeature);
+    })
+    .catch((e) => {
+      console.log({
+        errorMessage: e,
+      });
+      setStateBool(undefined);
+    });
+
+  return stateBool;
 }
 
 function DonationPage() {
+  const ECSInstance = EventControllerSingleton.getInstance();
+
+  const pageParams = useParams();
+  const contractAddress = pageParams.contractAddress;
+
+  const actualCustodianFeature = useCustodianFeature();
+
+  async function setActualCutodianFeature(state: boolean) {
+    try {
+      await ECSInstance.setCustodianFeature(state);
+    } catch (e) {
+      return {
+        errorMessage: e,
+      };
+    }
+  }
+
   function GeneralSetting() {
+    const [selected, setSelected] = useState("");
+
+    const handleListItemClick = (
+      event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+      index: string
+    ) => {
+      if (index === selected) setSelected("");
+      else setSelected(index);
+    };
     function ListView() {
       const stateData = useTokenList();
 
       function ItemGenerator() {
         const addressList = (stateData as TokenListData)
-          .tokenAddresses as Array<string>;
+          .tokenMetas as Array<TokenMeta>;
+
+        function disablePayout() {
+          if (
+            actualCustodianFeature == false ||
+            actualCustodianFeature == undefined
+          )
+            return <Button disabled>Payout</Button>;
+          return <Button>Payout</Button>;
+        }
         const items = addressList.map((x) => {
           return (
             <ListItemButton
-              key={x}
-              // selected={selectedIndex === 1}
-              // onClick={(event) => handleListItemClick(event, 1)}
+              key={x.tokenAddress}
+              selected={selected === x.tokenAddress}
+              onClick={(event) => handleListItemClick(event, x.tokenAddress)}
             >
               <Box
                 display={"flex"}
@@ -123,14 +151,14 @@ function DonationPage() {
                 justifyContent={"space-between"}
                 width={"100%"}
               >
-                <ListItemText primary={String(x)} />
+                <ListItemText primary={x.tokenSymbol} />
                 <ButtonGroup
                   sx={{ ml: 2 }}
                   size="small"
                   variant="outlined"
                   aria-label="outlined button group sx"
                 >
-                  <Button disabled>Payout</Button>
+                  {disablePayout()}
                   <Button>Withdraw</Button>
                 </ButtonGroup>
               </Box>
@@ -142,17 +170,21 @@ function DonationPage() {
       }
 
       function NoTokenLayout() {
-        if ((stateData.tokenAddresses as Array<string>).length !== 0) {
+        function disablePayout() {
+          if (
+            actualCustodianFeature == false ||
+            actualCustodianFeature == undefined
+          )
+            return <Button disabled>Payout</Button>;
+          return <Button>Payout</Button>;
+        }
+
+        if ((stateData?.tokenMetas as Array<TokenMeta>).length !== 0) {
           return (
             <Box>
               <Divider></Divider>
 
-              <ListItemButton
-                key={1}
-
-                // selected={selectedIndex === 1}
-                // onClick={(event) => handleListItemClick(event, 1)}
-              >
+              <ListItem key={"All Token"}>
                 <Box
                   display={"flex"}
                   flexDirection={"row"}
@@ -166,15 +198,24 @@ function DonationPage() {
                     variant="outlined"
                     aria-label="outlined button group sx"
                   >
-                    <Button disabled>Payout</Button>
+                    {disablePayout()}
                     <Button>Withdraw</Button>
                   </ButtonGroup>
                 </Box>
-              </ListItemButton>
+              </ListItem>
             </Box>
           );
         }
         return <></>;
+      }
+
+      function disablePayout() {
+        if (
+          actualCustodianFeature == false ||
+          actualCustodianFeature == undefined
+        )
+          return <Button disabled>Payout</Button>;
+        return <Button>Payout</Button>;
       }
 
       if (stateData === undefined) {
@@ -187,11 +228,7 @@ function DonationPage() {
           aria-label="main mailbox folders"
           sx={{ m: 1, maxHeight: 250, overflow: "auto" }}
         >
-          <ListItemButton
-            key={1}
-            // selected={selectedIndex === 1}
-            // onClick={(event) => handleListItemClick(event, 1)}
-          >
+          <ListItem key={"Ethers"}>
             <Box
               display={"flex"}
               flexDirection={"row"}
@@ -205,15 +242,57 @@ function DonationPage() {
                 variant="outlined"
                 aria-label="outlined button group sx"
               >
-                <Button disabled>Payout</Button>
+                {disablePayout()}
                 <Button>Withdraw</Button>
               </ButtonGroup>
             </Box>
-          </ListItemButton>
+          </ListItem>
           {ItemGenerator()}
 
           {NoTokenLayout()}
         </List>
+      );
+    }
+
+    function MainControls() {
+      function disableDelete() {
+        if (selected === "") return <Button disabled>Delete</Button>;
+        return <Button>Delete</Button>;
+      }
+
+      async function toggleCustodian() {
+        setActualCutodianFeature(!actualCustodianFeature).then(() => {});
+      }
+
+      return (
+        <Box
+          display={"flex"}
+          flexDirection={"row"}
+          flexWrap={"wrap"}
+          justifyContent={"space-between"}
+          alignItems={"center"}
+          textAlign={"center"}
+          sx={{
+            mt: 1,
+          }}
+        >
+          <FormControlLabel
+            control={
+              <Switch
+                checked={actualCustodianFeature}
+                onChange={() => {
+                  toggleCustodian();
+                }}
+              />
+            }
+            label="Custodian Feature"
+          />
+
+          <Box>
+            {disableDelete()}
+            <Button>Create</Button>
+          </Box>
+        </Box>
       );
     }
 
@@ -237,35 +316,8 @@ function DonationPage() {
             </Typography>
           </Box>
           {ListView()}
-          <Box></Box>
           <Divider></Divider>
-          <Box
-            display={"flex"}
-            flexDirection={"row"}
-            flexWrap={"wrap"}
-            justifyContent={"space-between"}
-            alignItems={"center"}
-            textAlign={"center"}
-            sx={{
-              mt: 1,
-            }}
-          >
-            <FormControlLabel
-              control={
-                <Switch
-                  // checked={checked}
-                  // onChange={handleChange}
-                  defaultChecked
-                />
-              }
-              label="Custodian Feature"
-            />
-
-            <Box>
-              <Button disabled>Delete</Button>
-              <Button>Create</Button>
-            </Box>
-          </Box>
+          {MainControls()}
         </CardContent>
       </Card>
     );
@@ -273,17 +325,17 @@ function DonationPage() {
 
   function PercentageSetting() {
     function ListView() {
-      const stateData = useTokenList();
+      const stateData = usePercentList(contractAddress as string);
 
       function ItemGenerator() {
-        const addressList = (stateData as TokenListData)
-          .tokenAddresses as Array<string>;
+        const addressList = (stateData as PercentListData)
+          .Allocations as Array<Allocation>;
         const items = addressList.map((x) => {
           return (
             <ListItemButton
-              key={x}
+              key={x.walletAddress}
               // selected={selectedIndex === 1}
-              // onClick={(event) => handleListItemClick(event, 1)}
+              // onClick={(event) => handleListItemClick(event, x.walletAddress)}
             >
               <Box
                 display={"flex"}
@@ -291,10 +343,10 @@ function DonationPage() {
                 justifyContent={"space-between"}
                 width={"100%"}
               >
-                <ListItemText primary={String(x)} />
+                <ListItemText primary={String(x.walletAddress)} />
                 <TextField
                   id="outlined-basic"
-                  label="Outlined"
+                  label={`${x.percentValue}%`}
                   variant="outlined"
                   size="small"
                   sx={{ width: 100 }}
@@ -308,7 +360,7 @@ function DonationPage() {
       }
 
       function UnallocatedPecentageCalculation() {
-        if ((stateData.tokenAddresses as Array<string>).length !== 0) {
+        if ((stateData?.Allocations as Array<Allocation>).length !== 0) {
           return (
             <>
               <Divider></Divider>
@@ -459,7 +511,7 @@ function DonationPage() {
         >
           <Typography variant="h5">Donation Contract</Typography>
           <Typography variant="body1">
-            Contract Address: 0x000000000000000
+            {`Contract Address: ${contractAddress}`}
           </Typography>
         </Box>
         <Box
