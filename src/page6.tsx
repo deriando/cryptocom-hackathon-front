@@ -10,6 +10,7 @@ import {
   MenuItem,
   SelectChangeEvent,
   TextField,
+  Typography,
 } from "@mui/material";
 import { ethers } from "ethers";
 import * as React from "react";
@@ -41,18 +42,30 @@ function App() {
       classes={"Donation"}
       sx={{
         marginTop: "20%",
-        width: "50%",
-        marginLeft: "25%",
+        width: "20%",
+        marginLeft: "42%",
         alignItems: "center",
         textAlign: "center",
       }}
     >
-      <p>Donation Wallet</p>
-      <Card
-        classes={"crypto-wallet-view"}
+      <Box
         sx={{
-          width: "80%",
-          margin: "auto",
+          display: "flex",
+          justifyContent: "flex-start",
+          marginLeft: "30px",
+        }}
+      >
+        <Typography variant="h6" sx={{ marginTop: "20px" }}>
+          Donation Wallet
+        </Typography>
+      </Box>
+      <Box
+        sx={{
+          marginTop: "20px",
+          display: "inline-flex",
+          flexDirection: "row",
+          justifyContent: "center",
+          width: "100%",
         }}
       >
         <FormControl sx={{ m: "1px", width: "300px" }}>
@@ -76,10 +89,23 @@ function App() {
             <MenuItem value={3}>Bitcoin</MenuItem>
           </TextField>
         </FormControl>
-      </Card>
-      <Box classes={"buttons"} sx={{ padding: "5px" }}>
-        <Button sx={{ margin: "auto" }}>Connect</Button>
-        <Button sx={{ margin: "auto" }}>Donate</Button>
+      </Box>
+      <Box
+        classes={"buttons"}
+        sx={{
+          marginTop: "10px",
+          marginBottom: "10px",
+          padding: "5%",
+          display: "flex",
+          flexDirection: "column",
+          flexWrap: "wrap",
+          justifyContent: "flex-end",
+          alignItems: "flex-end",
+          width: "100%",
+        }}
+      >
+        <Button>Connect</Button>
+        <Button>Donate</Button>
       </Box>
     </Card>
   );

@@ -11,6 +11,7 @@ import {
   List,
   ListItemButton,
   ListItemText,
+  Typography,
 } from "@mui/material";
 import { ethers } from "ethers";
 import * as React from "react";
@@ -41,7 +42,7 @@ function App() {
         marginLeft: "25%",
       }}
     >
-      <p>Card Widget</p>
+      <Typography variant="h6">Card Widget</Typography>
       <Container
         className="card-list-view"
         sx={{
@@ -51,24 +52,49 @@ function App() {
       >
         <List sx={{ textAlign: "left", maxHeight: "60%", overflow: "auto" }}>
           <CardActionArea>
-            <ListItemButton>
-              <Card sx={{ width: "100%", marginTop: "2px" }}>
+            <Box
+              sx={{
+                width: "100%",
+                marginTop: "2px",
+                display: "inline-flex",
+                flexDirection: "column",
+                justifyContent: "flex-start",
+              }}
+            >
+              <ListItemButton>
                 <ListItemText
                   primary="Etherium"
                   sx={{ marginLeft: "20px" }}
                 ></ListItemText>
-              </Card>
-            </ListItemButton>
-            <ListItemButton>
-              <ListItemText primary="DogeCoin"></ListItemText>
-            </ListItemButton>
-            <ListItemButton>
-              <ListItemText primary="Bitcoin"></ListItemText>
-            </ListItemButton>
+              </ListItemButton>
+              <Divider></Divider>
+              <ListItemButton>
+                <ListItemText
+                  primary="DogeCoin"
+                  sx={{ marginLeft: "20px" }}
+                ></ListItemText>
+              </ListItemButton>
+              <Divider></Divider>
+              <ListItemButton>
+                <ListItemText
+                  primary="Bitcoin"
+                  sx={{ marginLeft: "20px" }}
+                ></ListItemText>
+              </ListItemButton>
+              <Divider></Divider>
+            </Box>
           </CardActionArea>
         </List>
       </Container>
-      <Box classes={"buttons"} sx={{ padding: "5px" }}>
+      <Box
+        classes={"buttons"}
+        sx={{
+          padding: "5px",
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-evenly",
+        }}
+      >
         <Button sx={{ padding: "30px" }}>Delete</Button>
         <Button sx={{ padding: "30px" }}>Modify</Button>
         <Button sx={{ padding: "30px" }}>Create New</Button>
