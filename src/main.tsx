@@ -1,6 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import Connect from "./Connect";
 import ErrorPage from "./error-page";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
@@ -10,6 +9,7 @@ import FrontPage from "./FrontPage";
 import FirstTimerPage from "./FirstTimerPage";
 import ManagerPage from "./ManagerPage";
 import DonationPage from "./DonationPage";
+import DirectDonation from "./page5";
 
 const darkTheme = createTheme({
   palette: {
@@ -29,6 +29,10 @@ const router = createBrowserRouter([
   {
     path: "/page4",
     element: <CWidget />,
+  },
+  {
+    path: "/page5",
+    element: <DirectDonation />,
   },
   {
     path: "/page6",
