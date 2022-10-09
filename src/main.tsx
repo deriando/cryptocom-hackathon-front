@@ -9,6 +9,7 @@ import Donation from "./page6";
 import FrontPage from "./FrontPage";
 import FirstTimerPage from "./FirstTimerPage";
 import ManagerPage from "./ManagerPage";
+import DonationPage from "./DonationPage";
 
 const darkTheme = createTheme({
   palette: {
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
   {
     path: "/page6",
     element: <Donation />,
+  },
+  {
+    path: "/Donation",
+    element: <DonationPage />,
   },
   {
     path: "/",
