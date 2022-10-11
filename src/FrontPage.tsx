@@ -1,72 +1,119 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { Box, Button, Card, CardHeader, Typography } from "@mui/material";
-import { ethers } from "ethers";
-import { redirect } from "react-router-dom";
-//@ts-ignore
 
 import { useNavigate } from "react-router-dom";
 import EventControllerSingleton from "./logic/EventController";
+import DirectDonationManagerFactoryInterface from "./logic/DirectDonationManagerFactory";
+import DirectDonationManagerInterface from "./logic/DirectDonationManager";
+import { ethers } from "ethers";
 
-function ConnectCard() {
+function usePageState() {
+  //use to update page to render when completing setup
+  const ECSInstance = EventControllerSingleton.getInstance();
+  const [DDMFactory, setDDMFactory] =
+    useState<null | DirectDonationManagerFactoryInterface>(null);
+  const [DDManager, setDDManager] =
+    useState<null | DirectDonationManagerInterface>(null);
+  const [firstBoot, setFirstBoot] = useState<boolean>(true);
   const nav = useNavigate();
 
-  async function connectWallet() {
-    // A Web3Provider wraps a standard Web3 provider, which is
-    // what MetaMask injects as window.ethereum into each page
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+  async function onFirstBootRun() {
+    try {
+      setDDMFactory(ECSInstance.DDMFactoryInstance);
+      setDDManager(ECSInstance.DDManagerInstance);
+      await setupDDMFactory();
+      await setupDDManager();
+    } catch (e) {
+      console.log(e);
+    }
+  }
 
-    // MetaMask requires requesting permission to connect users accounts
-    await provider.send("eth_requestAccounts", []);
-    const ECSInstance = EventControllerSingleton.getInstance();
-    // The MetaMask plugin also allows signing transactions to
-    // send ether and pay to change state within the blockchain.
-    // For this, you need the account signer...
-    const signer = provider.getSigner();
-    ECSInstance.setProvider(provider);
-    ECSInstance.setCaller(signer);
+  function isLocalDDMFactorySetUp() {
+    return ECSInstance.DDMFactoryInstance === null ? false : true;
+  }
 
-    let settingFactoryResolved: boolean = false;
-    await ECSInstance.setDDMFactory().then(() => {
-      settingFactoryResolved = true;
-    });
+  async function setupDDMFactory() {
+    if (isWalletSetUp() && !isLocalDDMFactorySetUp()) {
+      await ECSInstance.setDDMFactory();
+      setDDMFactory(ECSInstance.DDMFactoryInstance);
+    }
+  }
 
-    if (settingFactoryResolved) {
-      let DDMExist: null | boolean = null;
-      await ECSInstance.myDirectDonationManagerExist().then((x) => {
-        DDMExist = x;
-      });
+  function isLocalDDManagerSetUp() {
+    return ECSInstance.DDManagerInstance === null ? false : true;
+  }
 
-      if (DDMExist === true) {
-        ECSInstance.getMyDirectDonationManager().then((data) => {
-          ECSInstance.setDDManager(data.contractAddress as string).then(() => {
-            nav("/Manager");
-          });
-        });
+  async function isOnChainDDManagerSetUp() {
+    const contract: DirectDonationManagerFactoryInterface =
+      ECSInstance.DDMFactoryInstance as DirectDonationManagerFactoryInterface;
+    return await contract.myDirectDonationManagerExist();
+  }
+
+  async function setupDDManager() {
+    if (isWalletSetUp() && isLocalDDMFactorySetUp()) {
+      const isLocalSetup = isLocalDDManagerSetUp();
+      const isOnChainSetup = await isOnChainDDManagerSetUp();
+
+      if (isLocalSetup && isOnChainSetup) {
+        nav("Manager");
       }
-
-      if (DDMExist === false) {
-        nav("/FirstTime");
+      if (!isLocalSetup && isOnChainSetup) {
+        const contract =
+          ECSInstance.DDMFactoryInstance as DirectDonationManagerFactoryInterface;
+        //get onchain Address
+        const address = await contract.getMyDirectDonationManager();
+        //setup onchain to local
+        ECSInstance.setDDManager(address);
+        setDDManager(ECSInstance.DDManagerInstance);
+        //auto nav to managerpage
+        nav("/Manager");
       }
     }
   }
 
-  return (
-    <Card sx={{ padding: "1em" }}>
-      <Typography mb={"1em"}>Connect your wallet</Typography>
-      <Button variant="outlined" onClick={connectWallet}>
-        <Typography>MetaMask</Typography>
-      </Button>
-    </Card>
-  );
+  function isWalletSetUp() {
+    return ECSInstance.provider === null || ECSInstance.caller === null
+      ? false
+      : true;
+  }
+
+  async function setupWallet() {
+    if (!isWalletSetUp()) {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+
+      ECSInstance.provider = provider;
+      ECSInstance.caller = signer;
+    }
+  }
+
+  async function onConnectWalletClick() {
+    try {
+      await setupWallet();
+      await setupDDMFactory();
+      await setupDDManager();
+      nav("FirstTime");
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  useEffect(() => {
+    if (firstBoot) {
+      onFirstBootRun();
+      setFirstBoot(false);
+    }
+  });
+
+  return { onConnectWalletClick };
 }
 
 function FrontPage() {
-  function logic() {
-    // @ts-ignore
-    if (window.ethereum === null) {
-      return <Typography>Please install MetaMask</Typography>;
-    }
-    return <ConnectCard />;
+  const { onConnectWalletClick } = usePageState();
+
+  if (window.ethereum === null) {
+    return <Typography>Please install MetaMask</Typography>;
   }
 
   return (
@@ -78,9 +125,17 @@ function FrontPage() {
       textAlign={"center"}
       minHeight={"100vh"}
     >
-      {logic()}
+      <Card sx={{ padding: "1em" }}>
+        <Typography mb={"1em"}>Connect your wallet</Typography>
+        <Button variant="outlined" onClick={onConnectWalletClick}>
+          <Typography>MetaMask</Typography>
+        </Button>
+      </Card>
     </Box>
   );
 }
 
 export default FrontPage;
+
+//! bug ->  metamask change account
+//! bug -> metamask use different network
