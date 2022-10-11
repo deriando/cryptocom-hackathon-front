@@ -118,43 +118,30 @@ class EventController {
   }
 
   async getMyDirectDonationManager() {
-    try {
-      const data = await (
-        this.DDMFactoryInstance as DirectDonationManagerFactoryInterface
-      ).getMyDirectDonationManager();
-      return {
-        contractAddress: data,
-      };
-    } catch (e) {
-      return {
-        errorMessage: e,
-      };
-    }
+    const data = await (
+      this.DDMFactoryInstance as DirectDonationManagerFactoryInterface
+    ).getMyDirectDonationManager();
+    return data;
   }
 
   async createMyDirectDonationManager() {
-    try {
-      const DDMFactoryJson = await DirectDonationManagerFactoryMeta;
-      const DDMFactoryIface = new ethers.utils.Interface(DDMFactoryJson.abi);
-      const tx = await (
-        this.DDMFactoryInstance as DirectDonationManagerFactoryInterface
-      ).createMyDirectDonationManager();
-      console.log(tx);
-      const txReciept = await tx.wait();
-      console.log(txReciept);
-      const txLog = txReciept.logs[2];
-      console.log(txLog);
-      const eventLog = DDMFactoryIface.parseLog(txLog);
-      console.log(eventLog);
-      return {
-        contractAddress: eventLog.args._contractAddress,
-        ownerAddress: eventLog.args._contractAddress,
-      };
-    } catch (e) {
-      return {
-        errorMessage: e,
-      };
-    }
+    const DDMFactoryJson = await DirectDonationManagerFactoryMeta;
+    const DDMFactoryIface = new ethers.utils.Interface(DDMFactoryJson.abi);
+
+    const tx = await (
+      this.DDMFactoryInstance as DirectDonationManagerFactoryInterface
+    ).createMyDirectDonationManager();
+    console.log(tx);
+    const txReciept = await tx.wait();
+    console.log(txReciept);
+    const txLog = txReciept.logs[2];
+    console.log(txLog);
+    const eventLog = DDMFactoryIface.parseLog(txLog);
+    console.log(eventLog);
+    return {
+      contractAddress: eventLog.args._contractAddress,
+      ownerAddress: eventLog.args._contractAddress,
+    };
   }
 
   // * Manager Page Function //
@@ -215,7 +202,6 @@ class EventController {
       const data = await (
         this.DDManagerInstance as DirectDonationManagerInterface
       ).getDirectDonationList();
-      console.log(data);
       return {
         directDonationAddresses: data,
       };
@@ -227,45 +213,54 @@ class EventController {
   }
 
   async setCustodianFeature(state: boolean) {
-    try {
-      const DirectDonationJson = await DirectDonationMeta;
-      const DirectDonationIface = new ethers.utils.Interface(
-        DirectDonationJson.abi
-      );
-      const tx = await (
-        this.DirectDonationInstance as DirectDonationInterface
-      ).setCustodianFeature(state);
-      console.log(tx);
-      const txReciept = await tx.wait();
-      console.log(txReciept);
-      const txLog = txReciept.logs[0];
-      console.log(txLog);
-      const eventLog = DirectDonationIface.parseLog(txLog);
-      console.log(eventLog);
-      return {
-        process: "completed",
-      };
-    } catch (e) {
-      return {
-        errorMessage: e,
-      };
-    }
+    const DirectDonationJson = await DirectDonationMeta;
+    const DirectDonationIface = new ethers.utils.Interface(
+      DirectDonationJson.abi
+    );
+
+    const tx = await (
+      this.DirectDonationInstance as DirectDonationInterface
+    ).setCustodianFeature(state);
+    console.log(tx);
+    const txReciept = await tx.wait();
+    console.log(txReciept);
+    const txLog = txReciept.logs;
+    console.log(txLog);
+    const eventLog = DirectDonationIface.parseLog(txLog);
+    console.log(eventLog);
+    return {
+      process: "completed",
+    };
   }
 
   async getCustodianFeature() {
-    try {
-      const data = await (
-        this.DirectDonationInstance as DirectDonationInterface
-      ).CustodianFeature();
-      console.log(data);
-      return {
-        custodianFeature: data,
-      };
-    } catch (e) {
-      return {
-        errorMessage: e,
-      };
-    }
+    const data = await (
+      this.DirectDonationInstance as DirectDonationInterface
+    ).CustodianFeature();
+    return {
+      custodianFeature: data,
+    };
+  }
+
+  async getSupportedTokenList() {
+    const data = await (
+      this.DirectDonationInstance as DirectDonationInterface
+    ).getAcceptedERC20List();
+    return {
+      tokenAddresses: data,
+    };
+  }
+
+  async getERC20Symbol(this: EventController, address: string) {
+    const ERC20Token = await new ethers.Contract(
+      address,
+      ERC20Meta.abi
+    ).connect(this.provider as providers.Provider);
+    const ERC20Symbol = await ERC20Token.Symbol();
+    return {
+      tokenAddress: address,
+      tokenSymbol: ERC20Symbol,
+    };
   }
 }
 

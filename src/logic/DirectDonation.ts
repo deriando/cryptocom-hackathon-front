@@ -131,7 +131,7 @@ class DirectDonationInterface {
   async getAcceptedERC20List(
     this: DirectDonationInterface,
     caller = this.defaultCaller
-  ): Promise<Array<string>> {
+  ): Promise<any> {
     this._isContractSet();
     //! need to test functionality of returns from contracct
     return await (this._directDonationContract as Contract)
