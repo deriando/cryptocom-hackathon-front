@@ -16,37 +16,153 @@ import {
 import { ethers } from "ethers";
 import { useNavigate } from "react-router-dom";
 import EventControllerSingleton from "./logic/EventController";
+import DirectDonationManagerInterface from "./logic/DirectDonationManager";
 
-interface StateData {
-  directDonationAddresses?: Array<string>;
-  errorMessage?: any;
+//* may add name in contract in future  */
+interface DonationItemMeta {
+  contractAddress: string;
 }
 
-function useDDListData() {
+function usePageState() {
+  //use to update page to render when completing setup
   const ECSInstance = EventControllerSingleton.getInstance();
-  const [stateData, setStateData] = useState<StateData | undefined>(undefined);
+  const [trigger, setTrigger] = useState<null>(null);
+  const [firstBoot, setFirstBoot] = useState<boolean>(true); //only true / false state
 
-  ECSInstance.getDirectDonationList()
-    .then((data) => {
-      setStateData(data);
-    })
-    .catch((e) => {
-      setStateData({
-        errorMessage: e,
-      });
+  const [donationList, setDonationList] =
+    useState<null | Array<DonationItemMeta>>(null); //only null, [], [<someItems>]
+
+  const nav = useNavigate();
+
+  async function onFirstBootRun() {
+    try {
+      console.log(`start up Manager Page`);
+      redirectForMissingData();
+      await generateDonationList();
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  function isLocalDDMFactorySetUp() {
+    return ECSInstance.DDMFactoryInstance === null ? false : true;
+  }
+
+  function isWalletSetUp() {
+    return ECSInstance.provider === null || ECSInstance.caller === null
+      ? false
+      : true;
+  }
+
+  function isLocalDDManagerSetUp() {
+    return ECSInstance.DDManagerInstance === null ? false : true;
+  }
+
+  function redirectForMissingData() {
+    if (!isLocalDDMFactorySetUp() || !isWalletSetUp()) {
+      nav("/");
+    }
+    if (!isLocalDDManagerSetUp()) {
+      nav("/FirstTime");
+    }
+  }
+
+  async function generateDonationList() {
+    const contract: DirectDonationManagerInterface =
+      ECSInstance.DDManagerInstance as DirectDonationManagerInterface;
+    const data = await contract.getDirectDonationList();
+    const exportData = data.map((x) => {
+      return { contractAddress: x };
     });
+    setDonationList(exportData);
+  }
 
-  return stateData;
+  async function removeDirectDonation(contractAddress: string) {
+    const contract: DirectDonationManagerInterface =
+      ECSInstance.DDManagerInstance as DirectDonationManagerInterface;
+    await contract.removeDirectDonation(
+      contractAddress,
+      removeDirectDonationCallback
+    );
+  }
+
+  async function removeDirectDonationCallback(data: any) {
+    //no use of return data
+    console.log(data);
+    await generateDonationList();
+  }
+
+  async function onDeleteButtonClick(contractAddress: string) {
+    if (contractAddress !== "") {
+      try {
+        await removeDirectDonation(contractAddress);
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }
+
+  async function setupDirectDonation(contractAddress: string) {
+    if (isWalletSetUp()) {
+      await ECSInstance.setDirectDonation(contractAddress);
+      nav(`/Donation/${contractAddress}`);
+    }
+  }
+
+  async function onModifyButtonClick(contractAddress: string) {
+    if (contractAddress !== "") {
+      try {
+        setupDirectDonation(contractAddress);
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }
+
+  async function createDirectDonation() {
+    const contract: DirectDonationManagerInterface =
+      ECSInstance.DDManagerInstance as DirectDonationManagerInterface;
+    await contract.createDirectDonation(createDirectDonationCallback);
+  }
+
+  async function createDirectDonationCallback(data: any) {
+    //no use of return data
+    console.log(data);
+    await generateDonationList();
+  }
+
+  async function onCreateButtonClick() {
+    try {
+      createDirectDonation();
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  useEffect(() => {
+    if (firstBoot) {
+      onFirstBootRun();
+      setFirstBoot(false);
+    }
+  });
+  return {
+    donationList,
+    onCreateButtonClick,
+    onDeleteButtonClick,
+    onModifyButtonClick,
+  };
 }
 
 function ManagerCreationCard() {
-  const nav = useNavigate();
-  const ECSInstance = EventControllerSingleton.getInstance();
-
-  const stateData = useDDListData();
+  const {
+    donationList,
+    onCreateButtonClick,
+    onDeleteButtonClick,
+    onModifyButtonClick,
+  } = usePageState();
   const [selectedIndex, setSelectedIndex] = useState("");
 
-  function ListOfDonations() {
+  function ListView() {
     const handleListItemClick = (
       event: React.MouseEvent<HTMLDivElement, MouseEvent>,
       index: string
@@ -54,36 +170,25 @@ function ManagerCreationCard() {
       setSelectedIndex(index);
     };
 
-    function itemsList() {
-      const addressList = (stateData as StateData)
-        .directDonationAddresses as Array<string>;
-      const items = addressList.map((x) => {
+    function ItemGenerator() {
+      const items = (donationList as Array<DonationItemMeta>).map((x) => {
         return (
           <ListItemButton
-            key={x}
-            selected={selectedIndex === x}
-            onClick={(event) => handleListItemClick(event, x)}
+            key={x.contractAddress}
+            selected={selectedIndex === x.contractAddress}
+            onClick={(event) => handleListItemClick(event, x.contractAddress)}
           >
-            <ListItemText primary={x} />
+            <ListItemText primary={x.contractAddress} />
           </ListItemButton>
         );
       });
       return items;
     }
 
-    //console.log(stateData);
-    if (stateData === undefined || Object.keys(stateData).length === 0) {
+    if (donationList === null)
       return <Typography mb={"1em"}>loading!</Typography>;
-    }
-
-    if (stateData.hasOwnProperty("errorMessage")) {
-      return <Typography mb={"1em"}>Something has when wrong!</Typography>;
-    }
-
-    if ((stateData.directDonationAddresses as Array<string>).length === 0) {
+    if (donationList.length === 0)
       return <Typography mb={"1em"}>Create Your Donation Widget!</Typography>;
-    }
-
     return (
       <Container
         sx={{
@@ -93,84 +198,11 @@ function ManagerCreationCard() {
       >
         <Box sx={{ width: "100%", maxWidth: 360 }}>
           <List component="nav" aria-label="main mailbox folders">
-            {itemsList()}
+            {ItemGenerator()}
           </List>
         </Box>
       </Container>
     );
-  }
-
-  function buttons() {
-    if (selectedIndex === "") {
-      return (
-        <Container>
-          <Button
-            variant="outlined"
-            sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
-            disabled
-          >
-            Delete
-          </Button>
-          <Button
-            variant="outlined"
-            sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
-            disabled
-          >
-            Modify
-          </Button>
-          <Button
-            variant="outlined"
-            sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
-            onClick={createDirectDonation}
-          >
-            Create New
-          </Button>
-        </Container>
-      );
-    } else {
-      return (
-        <Container>
-          <Button
-            variant="outlined"
-            sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
-            onClick={removeDirectDonation}
-          >
-            Delete
-          </Button>
-          <Button
-            variant="outlined"
-            sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
-            onClick={modifyDirectDonation}
-          >
-            Modify
-          </Button>
-          <Button
-            variant="outlined"
-            sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
-            onClick={createDirectDonation}
-          >
-            Create New
-          </Button>
-        </Container>
-      );
-    }
-  }
-  async function removeDirectDonation() {
-    console.log(selectedIndex);
-    if (selectedIndex === "") return;
-    const data = await ECSInstance.removeDirectDonation(selectedIndex);
-    console.log(data);
-  }
-
-  async function createDirectDonation() {
-    const data = await ECSInstance.createDirectDonation();
-    console.log(data);
-  }
-
-  async function modifyDirectDonation() {
-    ECSInstance.setDirectDonation(selectedIndex).then(() => {
-      nav(`/Donation/${selectedIndex}`);
-    });
   }
 
   return (
@@ -184,22 +216,41 @@ function ManagerCreationCard() {
           marginLeft: "25%",
         }}
       >
-        {ListOfDonations()}
+        {ListView()}
 
-        <Container sx={{ padding: "20px 0px 20px 0px" }}>{buttons()}</Container>
+        <Container sx={{ padding: "20px 0px 20px 0px" }}>
+          <Button
+            variant="outlined"
+            sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
+            onClick={() => onDeleteButtonClick(selectedIndex)}
+            disabled={selectedIndex === ""}
+          >
+            Delete
+          </Button>
+          <Button
+            variant="outlined"
+            sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
+            onClick={() => onModifyButtonClick(selectedIndex)}
+            disabled={selectedIndex === ""}
+          >
+            Modify
+          </Button>
+          <Button
+            variant="outlined"
+            sx={{ padding: "1px 5px 1px 5px", margin: "0px 5px 0px 5px" }}
+            onClick={() => onCreateButtonClick()}
+          >
+            Create New
+          </Button>
+        </Container>
       </Card>
     </Container>
   );
 }
 
 function ManagerPage() {
-  function logic() {
-    // @ts-ignore
-    if (window.ethereum === null) {
-      return <Typography>Please install MetaMask</Typography>;
-    }
-    return <ManagerCreationCard />;
-  }
+  if (window.ethereum === null)
+    return <Typography>Please install MetaMask</Typography>;
 
   return (
     <Box
@@ -210,7 +261,7 @@ function ManagerPage() {
       textAlign={"center"}
       minHeight={"100vh"}
     >
-      {logic()}
+      <ManagerCreationCard />
     </Box>
   );
 }
