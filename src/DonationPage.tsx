@@ -1,128 +1,133 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import {
-  Box,
-  Button,
-  Card,
-  CardHeader,
-  Typography,
-  Container,
-  Divider,
-  Switch,
-  ButtonGroup,
-  List,
-  ListItemButton,
-  ListItemText,
-  ListItem,
-  CardContent,
-  TextField,
-  Paper,
-  CardActions,
-  FormControlLabel,
-} from "@mui/material";
+import { Box, Typography, Divider, Paper } from "@mui/material";
 
 import { useNavigate, useNavigation, useParams } from "react-router-dom";
 import EventControllerSingleton from "./logic/EventController";
-import { truncate } from "fs";
 
-import GeneralSetting from "./components/DonationPage/GeneralSetting";
-import AllocationSetting from "./components/DonationPage/AllocationSetting";
+import GeneralSetting, {
+  TokenMeta,
+} from "./components/DonationPage/GeneralSetting";
+import AllocationSetting, {
+  AllocationMeta,
+} from "./components/DonationPage/AllocationSetting";
 import CallToActionCard from "./components/DonationPage/CallToActionCard";
+import DirectDonationInterface from "./logic/DirectDonation";
 
-// interface PageStore {
-//     tokenAddresses: Array<string>;
-//     walletAddresses: Array<string>;
-// }
+function usePageState() {
+  const pageParams = useParams();
+  const contractAddress: string = pageParams.contractAddress as string;
 
-// function usePageStore() {
-//   const ECSInstance = EventControllerSingleton.getInstance();
-//   const [pageStore, setPageStore] = useState<PageStore| undefined >(undefined);
-
-//   async function waitPageStore() {
-
-//     }catch(e){
-//       console.log(e);
-//     }
-//   }
-
-//   async function waitTokenAddressList() {
-//     return await ECSInstance.getSupportedTokenList();
-//   }
-
-//   async function waitWalletAddressList(){
-//       return ([ "0x000001", "0x000002"]);
-//   }
-
-//   useEffect(()=>{
-//     waitPageStore();
-//   });
-
-//   return pageStore;
-// }
-
-function useTokenAddressList() {
   const ECSInstance = EventControllerSingleton.getInstance();
-  const [tokenAddressList, setTokenAddressList] = useState<
-    Array<string> | undefined
-  >(undefined);
-  // async get TokenList
-  function waitTokenList() {
-    ECSInstance.getSupportedTokenList()
-      .then((data) => {
-        setTokenAddressList(data.tokenAddresses);
-      })
-      .catch((e) => {
-        console.log({
-          errorMessage: e,
-        });
-        setTokenAddressList([]);
-      });
+  const [trigger, setTrigger] = useState<null>(null);
+  const [firstBoot, setFirstBoot] = useState<boolean>(true);
+  const [tokenList, setTokenList] = useState<null | Array<TokenMeta>>(null);
+  const [allocationList, setAllocationList] =
+    useState<null | Array<AllocationMeta>>(null);
+  const nav = useNavigate();
+
+  async function onFirstBootRun() {
+    try {
+      console.log(`start up Contract Page`);
+      redirectForMissingData();
+      await Promise.all([generateTokenList(), generateAllocationList()]);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  function isLocalDDMFactorySetUp() {
+    return ECSInstance.DDMFactoryInstance === null ? false : true;
+  }
+
+  function isWalletSetUp() {
+    return ECSInstance.provider === null || ECSInstance.caller === null
+      ? false
+      : true;
+  }
+
+  function isLocalDDManagerSetUp() {
+    return ECSInstance.DDManagerInstance === null ? false : true;
+  }
+
+  function isLocalDirectDonationSetUp() {
+    return ECSInstance.DirectDonationInstance === null ? false : true;
+  }
+
+  function redirectForMissingData() {
+    if (!isLocalDDMFactorySetUp() || !isWalletSetUp()) {
+      nav("/");
+    }
+    if (!isLocalDDManagerSetUp()) {
+      nav("/FirstTime");
+    }
+    if (!isLocalDirectDonationSetUp()) {
+      nav("/Manager");
+    }
+  }
+
+  async function generateTokenList() {
+    const contract: DirectDonationInterface =
+      ECSInstance.DirectDonationInstance as DirectDonationInterface;
+    const data = await contract.getAcceptedERC20List();
+    const exportData = data.map((x) => {
+      return { contractAddress: x };
+    });
+    setTokenList(exportData);
+  }
+
+  async function generateAllocationList() {
+    const contract: DirectDonationInterface =
+      ECSInstance.DirectDonationInstance as DirectDonationInterface;
+    const data = await contract.getWalletList();
+    const exportData = data.map((x) => {
+      return { walletAddress: x };
+    });
+    setAllocationList(exportData);
   }
 
   useEffect(() => {
-    waitTokenList();
-  }, [tokenAddressList]);
-
-  return tokenAddressList;
-}
-
-function usePercentList() {
-  const ECSInstance = EventControllerSingleton.getInstance();
-  const [stateData, setStateData] = useState<Array<string> | undefined>(
-    undefined
-  );
-
-  function waitData() {
-    const promise = new Promise(function (resolve) {
-      setTimeout(resolve, 100);
-    });
-    promise.then(() => {
-      setStateData(["0x000001", "0x000002"]);
-    });
-  }
-
-  useEffect(() => {
-    waitData();
-  }, [stateData]);
-  return stateData;
+    if (firstBoot) {
+      onFirstBootRun();
+      setFirstBoot(false);
+    }
+  });
+  return {
+    contractAddress,
+    tokenList,
+    allocationList,
+    generateTokenList,
+    generateAllocationList,
+  };
 }
 
 function DonationPage() {
-  const pageParams = useParams();
-  const contractAddress: string = pageParams.contractAddress as string;
-  // const pageStore = usePageStore();
-  const tokenAddresses = useTokenAddressList();
-  const percentAddresses = usePercentList();
+  const {
+    contractAddress,
+    tokenList,
+    allocationList,
+    generateTokenList,
+    generateAllocationList,
+  } = usePageState();
 
   function loadingGeneralSetting() {
-    if (pageStore === undefined || pageStore.tokenAddresses === undefined)
+    if (tokenList === null)
       return <Typography>Loading General Setting Card.</Typography>;
-    else return <GeneralSetting tokenAddresses={pageStore.tokenAddresses} />;
+
+    return (
+      <GeneralSetting tokens={tokenList} reloadTokens={generateTokenList} />
+    );
   }
 
   function loadingAllocationSetting() {
-    if (pageStore.percentAddresses === undefined)
+    if (allocationList === null)
       return <Typography>Loading General Setting Card.</Typography>;
-    else return <AllocationSetting allocations={pageStore.percentAddresses} />;
+
+    return (
+      <AllocationSetting
+        allocations={allocationList}
+        reloadAllocations={generateAllocationList}
+      />
+    );
   }
 
   if (window.ethereum === null)

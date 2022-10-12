@@ -1,82 +1,105 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
   Card,
-  CardHeader,
   Typography,
-  Container,
   Divider,
-  Switch,
-  ButtonGroup,
   List,
   ListItemButton,
   ListItemText,
-  ListItem,
   CardContent,
   TextField,
-  Paper,
-  CardActions,
-  FormControlLabel,
 } from "@mui/material";
 
-import { useNavigate, useNavigation, useParams } from "react-router-dom";
 import EventControllerSingleton from "../../logic/EventController";
-import { truncate } from "fs";
+import DirectDonationInterface from "../../logic/DirectDonation";
 
-interface AllocationMeta {
+export interface AllocationMeta {
   walletAddress: string;
-  percentValue: number;
+  percentValue?: number;
 }
 
-function useAllocationMeta(address: string) {
+function useComponentState(
+  Allocations: Array<AllocationMeta>,
+  reloadAllocations: Function
+) {
   const ECSInstance = EventControllerSingleton.getInstance();
-  const [stateData, setStateData] = useState<AllocationMeta>({
-    walletAddress: "0x000001",
-    percentValue: 10.0,
-  });
+  const [trigger, setTrigger] = useState<null>(null);
+  const [firstBoot, setFirstBoot] = useState<boolean>(true);
+  const [allocationMetaList, setAllocationMetaList] =
+    useState<null | Array<AllocationMeta>>(null);
 
-  //   return { Allocations: [
-  //     { walletAddress: "0x000001", percentValue: 10.0 },
-  //     { walletAddress: "0x000002", percentValue: 20.05 },
-  //   ],
-  // };
+  async function onFirstBootRun() {
+    try {
+      console.log(`start up Allocation Component`);
+      await hydrateAllocationMeta();
+    } catch (e) {
+      console.log(e);
+    }
+  }
 
-  function waitData() {
-    const promise = new Promise(function (resolve) {
-      setTimeout(resolve, 100);
+  async function hydrateAllocationMeta() {
+    const contract = ECSInstance.DirectDonationInstance;
+    const mapPromises = Allocations.map((x) => {
+      return (contract as DirectDonationInterface).getAllocationValue(
+        x.walletAddress
+      );
     });
-    promise.then(() => {
-      setStateData({ walletAddress: "0x000001", percentValue: 10.0 });
+    const promisesData = await Promise.all(mapPromises);
+    const exportData = Allocations.map((x, i) => {
+      return {
+        walletAddress: x.walletAddress,
+        percentValue: promisesData[i],
+      };
     });
+    setAllocationMetaList(exportData);
+  }
+
+  async function onPercentValueChange() {}
+
+  async function onDeleteButtonClick() {}
+
+  async function onCreateButtonClick() {
+    //Dialog Widget call
   }
 
   useEffect(() => {
-    waitData();
-  }, [stateData]);
-  return stateData;
-}
-
-interface ItemProps {
-  walletAddress: string;
-  percentValue: number;
+    if (firstBoot) {
+      onFirstBootRun();
+      setFirstBoot(false);
+    }
+  });
+  return { allocationMetaList };
 }
 
 interface AllocationSettingProps {
-  allocations: Array<string>;
+  allocations: Array<AllocationMeta>;
+  reloadAllocations: Function;
 }
 
 function AllocationSetting(props: AllocationSettingProps) {
-  const addressList = [""];
+  const [selectedIndex, setSelectedIndex] = useState("");
+  const { allocationMetaList } = useComponentState(
+    props.allocations,
+    props.reloadAllocations
+  );
 
   function ListView() {
+    const handleListItemClick = (
+      event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+      index: string
+    ) => {
+      setSelectedIndex(index);
+    };
+
     function ItemGenerator() {
-      function Item(props: ItemProps) {
+      const items = (allocationMetaList as Array<AllocationMeta>).map((x) => {
         return (
           <ListItemButton
-            key={props.walletAddress}
-            // selected={selectedIndex === 1}
-            // onClick={(event) => handleListItemClick(event, x.walletAddress)}
+            key={x.walletAddress}
+            selected={selectedIndex === x.walletAddress}
+            onClick={(event) => handleListItemClick(event, x.walletAddress)}
           >
             <Box
               display={"flex"}
@@ -84,10 +107,10 @@ function AllocationSetting(props: AllocationSettingProps) {
               justifyContent={"space-between"}
               width={"100%"}
             >
-              <ListItemText primary={String(props.walletAddress)} />
+              <ListItemText primary={String(x.walletAddress)} />
               <TextField
                 id="outlined-basic"
-                label={`${props.percentValue}%`}
+                label={`${(x.percentValue as number).toFixed(2)}%`}
                 variant="outlined"
                 size="small"
                 sx={{ width: 100 }}
@@ -95,24 +118,13 @@ function AllocationSetting(props: AllocationSettingProps) {
             </Box>
           </ListItemButton>
         );
-      }
-
-      const items = addressList.map((x) => {
-        const itemMeta = useAllocationMeta(x);
-        return (
-          <Item
-            key={itemMeta.walletAddress}
-            walletAddress={itemMeta.walletAddress}
-            percentValue={itemMeta.percentValue}
-          />
-        );
       });
 
       return items;
     }
 
-    function UnallocatedPecentageCalculation() {
-      if (addressList.length !== 0) {
+    function UnallocatedPecentageCalculator() {
+      if ((allocationMetaList as Array<AllocationMeta>).length !== 0) {
         return (
           <>
             <Divider></Divider>
@@ -132,10 +144,10 @@ function AllocationSetting(props: AllocationSettingProps) {
       );
     }
 
-    if (addressList === undefined) {
+    if (allocationMetaList === null)
       return <Typography mb={"1em"}>loading!</Typography>;
-    }
-
+    if (allocationMetaList.length === 0)
+      return <Typography mb={"1em"}>Create An Allocation!</Typography>;
     return (
       <List
         component="nav"
@@ -143,8 +155,7 @@ function AllocationSetting(props: AllocationSettingProps) {
         sx={{ m: 1, maxHeight: 250, overflow: "auto" }}
       >
         {ItemGenerator()}
-
-        {UnallocatedPecentageCalculation()}
+        {UnallocatedPecentageCalculator()}
       </List>
     );
   }
@@ -192,6 +203,6 @@ function AllocationSetting(props: AllocationSettingProps) {
   );
 }
 
-function GeneralSetting() {}
+function Item(props: AllocationMeta) {}
 
 export default AllocationSetting;

@@ -1,11 +1,9 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
   Card,
-  CardHeader,
   Typography,
-  Container,
   Divider,
   Switch,
   ButtonGroup,
@@ -14,123 +12,139 @@ import {
   ListItemText,
   ListItem,
   CardContent,
-  TextField,
-  Paper,
-  CardActions,
   FormControlLabel,
 } from "@mui/material";
 
-import { useNavigate, useNavigation, useParams } from "react-router-dom";
 import EventControllerSingleton from "../../logic/EventController";
-import { truncate } from "fs";
+import DirectDonationInterface from "../../logic/DirectDonation";
 
-interface TokenMeta {
-  tokenAddress: string;
-  tokenSymbol: string;
+// function useCustodianFeature() {
+//   const ECSInstance = EventControllerSingleton.getInstance();
+//   const [custodianFeature, setCustodianFeature] = useState<boolean>(false);
+
+//   function waitingCustodianFeature() {
+//     // ECSInstance.getCustodianFeature()
+//     // .then((data) => {
+//     //   setCustodianFeature(data.custodianFeature === undefined? false: data.custodianFeature);
+//     // })
+//     // .catch((e) => {
+//     setCustodianFeature(false);
+//     //   console.log({
+//     //     errorMessage: e,
+//     //   });
+//     // });
+//   }
+
+//   function toggleCustodianFeature() {
+//     ECSInstance.setCustodianFeature(!custodianFeature)
+//       .then((data) => {
+//         console.log(data);
+//       })
+//       .catch((e) => {
+//         console.log({
+//           errorMessage: e,
+//         });
+//       });
+//   }
+
+//   useEffect(() => {
+//     waitingCustodianFeature();
+//   }, [custodianFeature]);
+
+//   return { custodianFeature, toggleCustodianFeature };
+// }
+
+export interface TokenMeta {
+  contractAddress: string;
+  tokenSymbol?: string;
 }
 
-function useTokenMeta(address: string) {
+function useComponentState(Tokens: Array<TokenMeta>, reloadTokens: Function) {
   const ECSInstance = EventControllerSingleton.getInstance();
-  const [tokenMeta, setTokenMeta] = useState<TokenMeta>({
-    tokenAddress: address,
-    tokenSymbol: "",
-  });
-  const [isInitialRender, setIsInitialRender] = useState(true);
-
-  function waitToken() {
-    ECSInstance.getERC20Symbol(address)
-      .then((data) => {
-        setTokenMeta(data);
-      })
-      .catch((e) => {
-        setTokenMeta({
-          tokenAddress: address,
-          tokenSymbol: "",
-        });
-        console.log({
-          errorMessage: e,
-        });
-      });
-  }
-
-  useEffect(() => {
-    if (isInitialRender) {
-      setIsInitialRender(false);
-      waitToken();
-    }
-  }, [tokenMeta, isInitialRender]);
-
-  return tokenMeta;
-}
-
-function useCustodianFeature() {
-  const ECSInstance = EventControllerSingleton.getInstance();
+  const [trigger, setTrigger] = useState<null>(null);
+  const [firstBoot, setFirstBoot] = useState<boolean>(true);
+  const [tokenMetaList, setTokenMetaList] = useState<null | Array<TokenMeta>>(
+    null
+  );
   const [custodianFeature, setCustodianFeature] = useState<boolean>(false);
 
-  function waitingCustodianFeature() {
-    // ECSInstance.getCustodianFeature()
-    // .then((data) => {
-    //   setCustodianFeature(data.custodianFeature === undefined? false: data.custodianFeature);
-    // })
-    // .catch((e) => {
-    setCustodianFeature(false);
-    //   console.log({
-    //     errorMessage: e,
-    //   });
-    // });
+  async function onFirstBootRun() {
+    try {
+      console.log(`start up Allocation Component`);
+      await Promise.all([hydrateTokenMeta(), syncCustodianFeature()]);
+    } catch (e) {
+      console.log(e);
+    }
   }
 
-  function toggleCustodianFeature() {
-    ECSInstance.setCustodianFeature(!custodianFeature)
-      .then((data) => {
-        console.log(data);
-      })
-      .catch((e) => {
-        console.log({
-          errorMessage: e,
-        });
-      });
+  async function hydrateTokenMeta() {
+    const contract = ECSInstance.DirectDonationInstance;
+    const mapPromises = Tokens.map((x) => {
+      return (contract as DirectDonationInterface).getAllocationValue(
+        x.contractAddress
+      );
+    });
+    const promisesData = await Promise.all(mapPromises);
+    const exportData = Tokens.map((x, i) => {
+      return {
+        contractAddress: x.contractAddress,
+        percentValue: promisesData[i],
+      };
+    });
   }
+
+  async function getOnChainCustodianFeature() {}
+
+  async function syncCustodianFeature() {}
+
+  async function toggleCustodianFeatureSwitch() {}
+
+  async function onPayoutButtonClick() {}
+
+  async function onWithdrawButtonClick() {}
+
+  async function onDeleteButtonClick() {}
+
+  async function onCreateButtonClick() {}
 
   useEffect(() => {
-    waitingCustodianFeature();
-  }, [custodianFeature]);
-
-  return { custodianFeature, toggleCustodianFeature };
+    if (firstBoot) {
+      onFirstBootRun();
+      setFirstBoot(false);
+    }
+  });
+  return { tokenMetaList, custodianFeature, toggleCustodianFeatureSwitch };
 }
 
 interface GeneralSettingProps {
-  tokenAddresses: Array<string>;
-}
-
-interface ItemProps {
-  tokenAddress: string;
-  tokenSymbol: string;
+  tokens: Array<TokenMeta>;
+  reloadTokens: Function;
 }
 
 function GeneralSetting(props: GeneralSettingProps) {
   //Hooks
   const [selected, setSelected] = useState("");
-  const { custodianFeature, toggleCustodianFeature } = useCustodianFeature();
-  const addressList = props.tokenAddresses;
-
-  const handleListItemClick = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
-    index: string
-  ) => {
-    if (index === selected) setSelected("");
-    else setSelected(index);
-  };
+  const { tokenMetaList, custodianFeature, toggleCustodianFeatureSwitch } =
+    useComponentState(props.tokens, props.reloadTokens);
+  // const addressList = props.contractAddresses;
 
   function ListView() {
+    const handleListItemClick = (
+      event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+      index: string
+    ) => {
+      if (index === selected) setSelected("");
+      else setSelected(index);
+    };
+
     function ItemGenerator() {
       // Individual Item React Component
-      function Item(props: ItemProps) {
+      const items = (tokenMetaList as Array<TokenMeta>).map((x) => {
         return (
           <ListItemButton
-            key={props.tokenAddress}
-            selected={selected === props.tokenAddress}
-            onClick={(event) => handleListItemClick(event, props.tokenAddress)}
+            key={x.contractAddress}
+            selected={selected === x.contractAddress}
+            onClick={(event) => handleListItemClick(event, x.contractAddress)}
           >
             <Box
               display={"flex"}
@@ -138,7 +152,7 @@ function GeneralSetting(props: GeneralSettingProps) {
               justifyContent={"space-between"}
               width={"100%"}
             >
-              <ListItemText primary={props.tokenSymbol} />
+              <ListItemText primary={x.tokenSymbol} />
               <ButtonGroup
                 sx={{ ml: 2 }}
                 size="small"
@@ -159,23 +173,12 @@ function GeneralSetting(props: GeneralSettingProps) {
             </Box>
           </ListItemButton>
         );
-      }
-      //build list of Indivdual Item
-      const items = addressList.map((x) => {
-        const itemMeta = useTokenMeta(x);
-        return (
-          <Item
-            key={itemMeta.tokenAddress}
-            tokenAddress={itemMeta.tokenAddress}
-            tokenSymbol={itemMeta.tokenSymbol}
-          />
-        );
       });
       return items;
     }
 
     function NoTokenLayout() {
-      if (addressList.length !== 0) {
+      if ((tokenMetaList as Array<TokenMeta>).length > 0) {
         return (
           <Box>
             <Divider></Divider>
@@ -212,7 +215,7 @@ function GeneralSetting(props: GeneralSettingProps) {
       return <></>;
     }
 
-    if (addressList === undefined) {
+    if (tokenMetaList === null) {
       return <Typography mb={"1em"}>loading!</Typography>;
     }
 
@@ -250,42 +253,8 @@ function GeneralSetting(props: GeneralSettingProps) {
           </Box>
         </ListItem>
         {ItemGenerator()}
-
         {NoTokenLayout()}
       </List>
-    );
-  }
-
-  function MainControls() {
-    return (
-      <Box
-        display={"flex"}
-        flexDirection={"row"}
-        flexWrap={"wrap"}
-        justifyContent={"space-between"}
-        alignItems={"center"}
-        textAlign={"center"}
-        sx={{
-          mt: 1,
-        }}
-      >
-        <FormControlLabel
-          control={
-            <Switch
-              checked={custodianFeature}
-              onChange={() => {
-                toggleCustodianFeature();
-              }}
-            />
-          }
-          label="Custodian Feature"
-        />
-
-        <Box>
-          <Button disabled={selected === "" ? true : false}>Delete</Button>
-          <Button>Create</Button>
-        </Box>
-      </Box>
     );
   }
 
@@ -310,7 +279,34 @@ function GeneralSetting(props: GeneralSettingProps) {
         </Box>
         {ListView()}
         <Divider></Divider>
-        {MainControls()}
+        <Box
+          display={"flex"}
+          flexDirection={"row"}
+          flexWrap={"wrap"}
+          justifyContent={"space-between"}
+          alignItems={"center"}
+          textAlign={"center"}
+          sx={{
+            mt: 1,
+          }}
+        >
+          <FormControlLabel
+            control={
+              <Switch
+                checked={custodianFeature}
+                onChange={() => {
+                  toggleCustodianFeatureSwitch();
+                }}
+              />
+            }
+            label="Custodian Feature"
+          />
+
+          <Box>
+            <Button disabled={selected === "" ? true : false}>Delete</Button>
+            <Button>Create</Button>
+          </Box>
+        </Box>
       </CardContent>
     </Card>
   );
