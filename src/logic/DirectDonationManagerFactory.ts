@@ -56,7 +56,6 @@ class DirectDonationManagerFactoryInterface {
     caller = this.defaultCaller
   ): Promise<void> {
     this._isContractSet();
-    console.log(this._directDonationManagerFactoryContract);
 
     if (this._directDonationManagerFactoryContract !== null) {
       await (this._directDonationManagerFactoryContract as Contract)

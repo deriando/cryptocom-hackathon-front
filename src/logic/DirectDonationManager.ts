@@ -27,39 +27,78 @@ class DirectDonationManagerInterface {
     ).connect(provider);
   }
 
+  //update
   async createDirectDonation(
     this: DirectDonationManagerInterface,
+    callback: providers.Listener,
     caller = this.defaultCaller
   ): Promise<any> {
     this._isContractSet();
-    return await (this._directDonationManagerContract as Contract)
+    await (this._directDonationManagerContract as Contract)
       .connect(caller)
       .createDirectDonation();
+
+    if (callback !== undefined) {
+      const contract = this._directDonationManagerContract;
+      const _contractOwner = await caller.getAddress();
+      const filter = (contract as Contract).filters.LogCreateDirectDonation(
+        _contractOwner,
+        null
+      );
+      (contract as Contract).once(filter, reducer);
+    }
+
+    function reducer(_contractOwner: string, _contractAddress: string) {
+      callback({
+        _contractOwner,
+        _contractAddress,
+      });
+    }
   }
 
+  //update
   async removeDirectDonation(
     this: DirectDonationManagerInterface,
     key: string,
+    callback: providers.Listener,
     caller = this.defaultCaller
   ): Promise<any> {
     this._isContractSet();
-    return await (this._directDonationManagerContract as Contract)
+    await (this._directDonationManagerContract as Contract)
       .connect(caller)
       .removeDirectDonation(key);
+
+    if (callback !== undefined) {
+      const contract = this._directDonationManagerContract;
+      const _contractOwner = await caller.getAddress();
+      const filter = (contract as Contract).filters.LogRemoveDirectDonation(
+        _contractOwner,
+        null
+      );
+      (contract as Contract).once(filter, reducer);
+    }
+
+    function reducer(_contractOwner: string, _contractAddress: string) {
+      callback({
+        _contractOwner,
+        _contractAddress,
+      });
+    }
   }
 
+  //read
   async getDirectDonationList(
     this: DirectDonationManagerInterface,
     caller = this.defaultCaller
   ): Promise<Array<string>> {
     this._isContractSet();
-    //! need to test functionality of returns from contract
     const data = await (this._directDonationManagerContract as Contract)
       .connect(caller)
       .getDirectDonationList();
     return data;
   }
 
+  //read
   async getDirectDonationCount(
     this: DirectDonationManagerInterface,
     caller = this.defaultCaller
@@ -70,6 +109,7 @@ class DirectDonationManagerInterface {
       .getDirectDonationCount();
   }
 
+  //read
   async getDirectDonationAtIndex(
     this: DirectDonationManagerInterface,
     index: number,

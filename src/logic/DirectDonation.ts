@@ -1,4 +1,3 @@
-import { ThemeProviderProps } from "@emotion/react";
 import {
   ethers,
   BigNumber,
@@ -74,6 +73,22 @@ class DirectDonationInterface {
       .subtractAllocation(walletAddress, unsignedPercentCount);
   }
 
+  async getAllocationValue(
+    this: DirectDonationInterface,
+    walletAddress: string,
+    caller = this.defaultCaller
+  ): Promise<number> {
+    const unsignedPercentCount = await (
+      this._directDonationContract as Contract
+    )
+      .connect(caller)
+      .getAllocationValue(walletAddress);
+    return unsignedPercentCount
+      .div(BigNumber.from("1000000000"))
+      .mul("100")
+      .toNumber();
+  }
+
   async getAllocationSum(
     this: DirectDonationInterface,
     caller = this.defaultCaller
@@ -131,9 +146,8 @@ class DirectDonationInterface {
   async getAcceptedERC20List(
     this: DirectDonationInterface,
     caller = this.defaultCaller
-  ): Promise<any> {
+  ): Promise<string[]> {
     this._isContractSet();
-    //! need to test functionality of returns from contracct
     return await (this._directDonationContract as Contract)
       .connect(caller)
       .getAcceptedERC20List();
