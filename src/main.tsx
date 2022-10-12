@@ -5,7 +5,7 @@ import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import DonationWidget from "./DonationWidget";
 import FrontPage from "./FrontPage";
-import FirstTimerPage from "./FirstTimerPage";
+import FirstTimePage from "./FirstTimePage";
 import ManagerPage from "./ManagerPage";
 import DonationPage from "./DonationPage";
 
@@ -18,7 +18,7 @@ const darkTheme = createTheme({
 const router = createBrowserRouter([
   {
     path: "/FirstTime",
-    element: <FirstTimerPage />,
+    element: <FirstTimePage />,
   },
   {
     path: "/Manager",
