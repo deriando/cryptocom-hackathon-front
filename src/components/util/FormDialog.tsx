@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
@@ -7,44 +7,60 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
-export default function FormDialog(props) {
-  const [open, setOpen] = useState(false);
+export interface FormDialogProps {
+  open: boolean;
+  setOpen: Function;
+  dialogTitle: string;
+  dialogContent: string;
+  textboxlabel: string;
+  textboxType: string;
+  actionButtonText: string;
+  dialogCallback: Function;
+}
 
-  const handleClickOpen = () => {
-    setOpen(true);
+export interface FromDialogReturn {
+  returnType: "ClickedCancel" | "ClickedAction";
+  dialogValue?: string;
+}
+
+export default function FormDialog(props: FormDialogProps) {
+  const inputRef = useRef("");
+
+  const onCancelButtonClick = () => {
+    props.setOpen(false);
+    props.dialogCallback({
+      returnType: "ClickedCancel",
+    });
   };
 
-  const handleClose = () => {
-    setOpen(false);
+  const onActionButtonClick = () => {
+    props.setOpen(false);
+    props.dialogCallback({
+      returnType: "ClickedAction",
+      dialogValue: inputRef,
+    });
   };
 
   return (
-    <div>
-      <Button variant="outlined" onClick={handleClickOpen}>
-        Open form dialog
-      </Button>
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>Subscribe</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            To subscribe to this website, please enter your email address here.
-            We will send updates occasionally.
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="name"
-            label="Email Address"
-            type="email"
-            fullWidth
-            variant="standard"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleClose}>Subscribe</Button>
-        </DialogActions>
-      </Dialog>
-    </div>
+    <Dialog open={props.open} onClose={onCancelButtonClick}>
+      <DialogTitle>{props.dialogTitle}</DialogTitle>
+      <DialogContent>
+        <DialogContentText>{props.dialogContent}</DialogContentText>
+        <TextField
+          autoFocus
+          margin="dense"
+          id="name"
+          label={props.textboxlabel}
+          type={props.textboxType}
+          fullWidth
+          variant="standard"
+          inputRef={inputRef}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancelButtonClick}>Cancel</Button>
+        <Button onClick={onActionButtonClick}>{props.actionButtonText}</Button>
+      </DialogActions>
+    </Dialog>
   );
 }
