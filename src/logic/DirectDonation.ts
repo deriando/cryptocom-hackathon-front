@@ -28,7 +28,7 @@ class DirectDonationInterface {
     directDonationAddress: string,
     provider = this.defaultProvider
   ) {
-    const meta = await DirectDonationMeta;
+    const meta = DirectDonationMeta;
     this._directDonationContract = await new ethers.Contract(
       directDonationAddress,
       meta.abi

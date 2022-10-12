@@ -1,5 +1,6 @@
+import { Listener } from "@remix-run/router/dist/history";
 import { ethers, Contract, providers, Signer, Transaction } from "ethers";
-import DirectDonationManagerFactoryMeta from "../../artifacts/contracts/DDManagerFactory.sol/DDManagerFactory.json" assert { type: "json" };
+import DirectDonationManagerFactoryMeta from "../../artifacts/contracts/DDManagerFactory.sol/IDDManagerFactory.json" assert { type: "json" };
 
 interface DirectDonationManagerFactoryInterface {
   defaultCaller: Signer;
@@ -14,18 +15,19 @@ class DirectDonationManagerFactoryInterface {
     this._directDonationManagerFactoryContract = null;
   }
 
-  setContract = async function (
+  async setContract(
     this: DirectDonationManagerFactoryInterface,
     directDonationManagerFactoryAddress: string,
     provider = this.defaultProvider
   ) {
-    const meta = await DirectDonationManagerFactoryMeta;
+    const meta = DirectDonationManagerFactoryMeta;
     this._directDonationManagerFactoryContract = await new ethers.Contract(
       directDonationManagerFactoryAddress,
       meta.abi
     ).connect(provider);
-  };
+  }
 
+  //read
   async myDirectDonationManagerExist(
     this: DirectDonationManagerFactoryInterface,
     caller = this.defaultCaller
@@ -36,6 +38,7 @@ class DirectDonationManagerFactoryInterface {
       .myDDManagerExist();
   }
 
+  //read
   async getMyDirectDonationManager(
     this: DirectDonationManagerFactoryInterface,
     caller = this.defaultCaller
@@ -46,15 +49,37 @@ class DirectDonationManagerFactoryInterface {
       .getMyDDManager();
   }
 
+  //update
   async createMyDirectDonationManager(
     this: DirectDonationManagerFactoryInterface,
+    callback: providers.Listener,
     caller = this.defaultCaller
-  ): Promise<any> {
+  ): Promise<void> {
     this._isContractSet();
-    const test = await (this._directDonationManagerFactoryContract as Contract)
-      .connect(caller)
-      .createMyDDManager();
-    return test;
+    console.log(this._directDonationManagerFactoryContract);
+
+    if (this._directDonationManagerFactoryContract !== null) {
+      await (this._directDonationManagerFactoryContract as Contract)
+        .connect(caller)
+        .createMyDDManager();
+
+      if (callback !== undefined) {
+        const contract = this._directDonationManagerFactoryContract;
+        const _contractOwner = await caller.getAddress();
+        const filter = (contract as Contract).filters.LogDDManagerCreation(
+          _contractOwner,
+          null
+        );
+        (contract as Contract).once(filter, reducer);
+      }
+
+      function reducer(_contractOwner: string, _contractAddress: string) {
+        callback({
+          _contractOwner,
+          _contractAddress,
+        });
+      }
+    }
   }
 
   _isContractSet = function (this: DirectDonationManagerFactoryInterface) {

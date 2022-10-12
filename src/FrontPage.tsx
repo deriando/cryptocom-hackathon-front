@@ -10,17 +10,13 @@ import { ethers } from "ethers";
 function usePageState() {
   //use to update page to render when completing setup
   const ECSInstance = EventControllerSingleton.getInstance();
-  const [DDMFactory, setDDMFactory] =
-    useState<null | DirectDonationManagerFactoryInterface>(null);
-  const [DDManager, setDDManager] =
-    useState<null | DirectDonationManagerInterface>(null);
+  const [trigger, setTrigger] = useState<null>(null);
   const [firstBoot, setFirstBoot] = useState<boolean>(true);
   const nav = useNavigate();
 
   async function onFirstBootRun() {
     try {
-      setDDMFactory(ECSInstance.DDMFactoryInstance);
-      setDDManager(ECSInstance.DDManagerInstance);
+      console.log(`start up Front Page`);
       await setupDDMFactory();
       await setupDDManager();
     } catch (e) {
@@ -33,9 +29,8 @@ function usePageState() {
   }
 
   async function setupDDMFactory() {
-    if (isWalletSetUp() && !isLocalDDMFactorySetUp()) {
+    if (isWalletSetUp()) {
       await ECSInstance.setDDMFactory();
-      setDDMFactory(ECSInstance.DDMFactoryInstance);
     }
   }
 
@@ -63,8 +58,7 @@ function usePageState() {
         //get onchain Address
         const address = await contract.getMyDirectDonationManager();
         //setup onchain to local
-        ECSInstance.setDDManager(address);
-        setDDManager(ECSInstance.DDManagerInstance);
+        await ECSInstance.setDDManager(address);
         //auto nav to managerpage
         nav("/Manager");
       }
@@ -78,14 +72,12 @@ function usePageState() {
   }
 
   async function setupWallet() {
-    if (!isWalletSetUp()) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const signer = provider.getSigner();
 
-      ECSInstance.provider = provider;
-      ECSInstance.caller = signer;
-    }
+    ECSInstance.provider = provider;
+    ECSInstance.caller = signer;
   }
 
   async function onConnectWalletClick() {
@@ -94,6 +86,7 @@ function usePageState() {
       await setupDDMFactory();
       await setupDDManager();
       nav("FirstTime");
+      // setTrigger(null);
     } catch (e) {
       console.log(e);
     }
