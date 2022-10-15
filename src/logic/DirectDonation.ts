@@ -269,38 +269,60 @@ class DirectDonationInterface {
     return tx;
   }
 
-  async donate(
+  async donateEther(
     this: DirectDonationInterface,
-    UnitAmount: number,
-    tokenAddress?: string
-  ): Promise<Transaction>;
-  async donate(
-    this: DirectDonationInterface,
-    UnitAmount: number,
-    tokenAddress: string,
+    UnitAmount: BigNumber,
+    callback: providers.Listener,
     caller = this.defaultCaller
-  ): Promise<Transaction> {
+  ): Promise<any> {
     this._isContractSet();
-    if (tokenAddress !== null) {
-      return await (this._directDonationContract as Contract)
-        .connect(caller)
-        .donate(tokenAddress, UnitAmount);
-    }
-    //! need to test functionality of returns from contracct
-    return await (this._directDonationContract as Contract)
+    const tx = await (this._directDonationContract as Contract)
       .connect(caller)
-      .donate({
+      ["donate()"]({
         value: ethers.utils.parseUnits(String(UnitAmount), "wei"),
       });
+
+    if (callback === undefined) return tx;
+    const contract = this._directDonationContract as Contract;
+    const filter = contract.filters.LogEtherDonation(null);
+    contract.once(filter, reducer);
+
+    function reducer(sum: number) {
+      callback({
+        sum,
+      });
+    }
+    return tx;
   }
 
-  async payoutContractBalance(
+  async donateToken(
     this: DirectDonationInterface,
-    subSetAmount: number,
-    tokenAddress?: string,
-    callback?: providers.Listener
-  ): Promise<any>;
-  async payoutContractBalance(
+    tokenAddress: string,
+    UnitAmount: BigNumber,
+    callback: providers.Listener,
+    caller = this.defaultCaller
+  ): Promise<any> {
+    this._isContractSet();
+
+    const tx = await (this._directDonationContract as Contract)
+      .connect(caller)
+      ["donate(address,uint256)"](tokenAddress, UnitAmount);
+
+    if (callback === undefined) return tx;
+    const contract = this._directDonationContract as Contract;
+    const filter = contract.filters.LogERC20Donation(null);
+    contract.once(filter, reducer);
+
+    function reducer(tokenAddress: string, sum: number) {
+      callback({
+        tokenAddress,
+        sum,
+      });
+    }
+    return tx;
+  }
+
+  async payoutTokenContractBalance(
     this: DirectDonationInterface,
     subSetAmount: number,
     tokenAddress: string,
@@ -308,25 +330,13 @@ class DirectDonationInterface {
     caller = this.defaultCaller
   ): Promise<any> {
     this._isContractSet();
-
-    let tx;
+    const tx = await (this._directDonationContract as Contract)
+      .connect(caller)
+      ["payoutContractBalance(address,uint256)"](tokenAddress, subSetAmount);
+    if (callback === undefined) return tx;
     const contract: Contract = this._directDonationContract as Contract;
-
-    if (tokenAddress !== null) {
-      const sum = BigNumber.from(subSetAmount.toString());
-      tx = await contract
-        .connect(caller)
-        .payoutContractBalance(tokenAddress, sum);
-      if (callback === undefined) return tx;
-      const filter = contract.filters.LogEtherPayout(null);
-      contract.once(filter, EtherReducer);
-    } else {
-      const sum = BigNumber.from(subSetAmount.toString());
-      tx = await contract.connect(caller).payoutContractBalance(sum);
-      if (callback === undefined) return tx;
-      const filter = contract.filters.LogERC20Payout(tokenAddress, null);
-      contract.once(filter, ERC20Reducer);
-    }
+    const filter = contract.filters.LogERC20Payout(tokenAddress, null);
+    contract.once(filter, ERC20Reducer);
 
     function ERC20Reducer(tokenAddress: string, sum: number) {
       if (callback === undefined) return;
@@ -335,6 +345,24 @@ class DirectDonationInterface {
         tokenAddress,
       });
     }
+    return tx;
+  }
+
+  async payoutEtherContractBalance(
+    this: DirectDonationInterface,
+    subSetAmount: number,
+    callback?: providers.Listener,
+    caller = this.defaultCaller
+  ): Promise<any> {
+    this._isContractSet();
+
+    const tx = await (this._directDonationContract as Contract)
+      .connect(caller)
+      ["payoutContractBalance(uint256)"](subSetAmount);
+    if (callback === undefined) return tx;
+    const contract: Contract = this._directDonationContract as Contract;
+    const filter = contract.filters.LogEtherPayout(null);
+    contract.once(filter, EtherReducer);
 
     function EtherReducer(sum: number) {
       if (callback === undefined) return;
@@ -356,53 +384,68 @@ class DirectDonationInterface {
       .payoutAllContractBalance();
   }
 
-  async withdrawContractBalance(
-    this: DirectDonationInterface,
-    tokenAddress?: string,
-    callback?: providers.Listener
-  ): Promise<any>;
-  async withdrawContractBalance(
+  async withdrawTokenContractBalance(
     this: DirectDonationInterface,
     tokenAddress: string,
     callback?: providers.Listener,
     caller = this.defaultCaller
   ): Promise<any> {
     this._isContractSet();
+    const tx = await (this._directDonationContract as Contract)
+      .connect(caller)
+      ["withdrawContractBalance(address)"](tokenAddress);
 
-    let tx;
+    if (callback === undefined) return tx;
     const contract: Contract = this._directDonationContract as Contract;
+    const filter = contract.filters.LogERC20Withdrawal(
+      tokenAddress,
+      await caller.getAddress(),
+      null
+    );
+    contract.once(filter, ERC20Reducer);
 
-    if (tokenAddress != null) {
-      tx = await contract.connect(caller).withdrawContractBalance(tokenAddress);
-      if (callback == undefined) return tx;
-      const filter = contract.filters.LogEtherWithdrawal(null, null);
-      contract.once(filter, EtherReducer);
-    } else {
-      tx = await contract.connect(caller).withdrawContractBalance();
-      if (callback == undefined) return tx;
-      const filter = contract.filters.LogERC20Withdrawal(
+    function ERC20Reducer(
+      tokenAdrress: string,
+      recipentAddress: string,
+      sum: number
+    ) {
+      if (callback === undefined) return;
+      callback({
         tokenAddress,
-        null,
-        null
-      );
-      contract.once(filter, ERC20Reducer);
+        recipentAddress,
+        sum,
+      });
+    }
+    return tx;
+  }
+
+  async withdrawEtherContractBalance(
+    this: DirectDonationInterface,
+    callback?: providers.Listener,
+    caller = this.defaultCaller
+  ): Promise<any> {
+    this._isContractSet();
+
+    const tx = await (this._directDonationContract as Contract)
+      .connect(caller)
+      ["withdrawContractBalance()"]();
+    if (callback === undefined) return tx;
+    const contract: Contract = this._directDonationContract as Contract;
+    const filter = contract.filters.LogEtherWithdrawal(
+      await caller.getAddress(),
+      null
+    );
+    contract.once(filter, EtherReducer);
+
+    function EtherReducer(recipentAddress: string, sum: number) {
+      if (callback === undefined) return;
+      callback({
+        recipentAddress,
+        sum,
+      });
     }
 
-    function ERC20Reducer(wallet: string, sum: number) {
-      if (callback == undefined) return;
-      callback({
-        wallet,
-        sum,
-      });
-    }
-    function EtherReducer(token: string, wallet: string, sum: number) {
-      if (callback == undefined) return;
-      callback({
-        token,
-        wallet,
-        sum,
-      });
-    }
+    return tx;
   }
 
   async withdrawAllContractBalance(
