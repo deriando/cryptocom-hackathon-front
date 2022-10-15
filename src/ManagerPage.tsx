@@ -178,7 +178,7 @@ function ManagerCreationCard() {
             selected={selectedIndex === x.contractAddress}
             onClick={(event) => handleListItemClick(event, x.contractAddress)}
           >
-            <ListItemText primary={x.contractAddress} />
+            <ListItemText secondary={x.contractAddress} />
           </ListItemButton>
         );
       });
@@ -217,7 +217,6 @@ function ManagerCreationCard() {
         }}
       >
         {ListView()}
-
         <Container sx={{ padding: "20px 0px 20px 0px" }}>
           <Button
             variant="outlined"
