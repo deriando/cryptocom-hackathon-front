@@ -153,13 +153,12 @@ function useComponentState() {
     const contract =
       ECSInstance.DirectDonationInstance as DirectDonationInterface;
     if (tokenAddress === "")
-      await contract.payoutContractBalance(
+      await contract.payoutEtherContractBalance(
         sum,
-        undefined,
         payoutContractBalanceCallback
       );
     else
-      await contract.payoutContractBalance(
+      await contract.payoutTokenContractBalance(
         sum,
         tokenAddress,
         payoutContractBalanceCallback
@@ -171,16 +170,30 @@ function useComponentState() {
   }
 
   async function onWithdrawButtonClick(tokenAddress: string) {
-    // try{
-    //   const totalSum = await getCurrentBalance(tokenAddress);
-    //   await withdrawContractBalance(tokenAddress, totalSum);
-    // }catch(e){
-    //   console.log(e);
-    // }
+    try {
+      const totalSum = await getCurrentBalance(tokenAddress);
+      await withdrawContractBalance(tokenAddress);
+    } catch (e) {
+      console.log(e);
+    }
   }
-  async function withdrawContractBalance() {}
+  async function withdrawContractBalance(tokenAddress: string) {
+    const contract =
+      ECSInstance.DirectDonationInstance as DirectDonationInterface;
+    if (tokenAddress === "")
+      await contract.withdrawEtherContractBalance(
+        withdrawContractBalanceCallback
+      );
+    else
+      await contract.withdrawTokenContractBalance(
+        tokenAddress,
+        withdrawContractBalanceCallback
+      );
+  }
 
-  async function withdrawContractBalanceCallback() {}
+  async function withdrawContractBalanceCallback() {
+    await generateTokenList();
+  }
 
   async function onDeleteButtonClick(tokenAddress: string) {
     try {
@@ -267,6 +280,7 @@ function useComponentState() {
     onCreateButtonClick,
     onDeleteButtonClick,
     onPayoutButtonClick,
+    onWithdrawButtonClick,
   };
 }
 
@@ -286,6 +300,7 @@ function GeneralSetting() {
     onCreateButtonClick,
     onDeleteButtonClick,
     onPayoutButtonClick,
+    onWithdrawButtonClick,
   } = useComponentState();
   // const addressList = props.contractAddresses;
 
@@ -335,7 +350,13 @@ function GeneralSetting() {
                 >
                   Payout
                 </Button>
-                <Button>Withdraw</Button>
+                <Button
+                  onClick={() => {
+                    onWithdrawButtonClick(x.contractAddress);
+                  }}
+                >
+                  Withdraw
+                </Button>
               </ButtonGroup>
             </Box>
           </ListItemButton>
@@ -418,7 +439,13 @@ function GeneralSetting() {
               >
                 Payout
               </Button>
-              <Button>Withdraw</Button>
+              <Button
+                onClick={() => {
+                  onWithdrawButtonClick("");
+                }}
+              >
+                Withdraw
+              </Button>
             </ButtonGroup>
           </Box>
         </ListItem>

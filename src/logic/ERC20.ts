@@ -53,6 +53,18 @@ class ERC20Interface {
       .balanceOf(address);
   }
 
+  async increaseAllowance(
+    this: ERC20Interface,
+    spenderAddress: string,
+    amount: BigNumber,
+    caller = this.defaultCaller
+  ): Promise<any> {
+    this._isContractSet();
+    return await (this._ERC20Contract as Contract)
+      .connect(caller)
+      .increaseAllowance(spenderAddress, amount);
+  }
+
   _isContractSet(this: ERC20Interface) {
     if (this._ERC20Contract === null)
       throw () =>
