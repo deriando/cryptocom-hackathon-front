@@ -24,23 +24,33 @@ class ERC20Interface {
 
   async setContract(
     this: ERC20Interface,
-    directDonationAddress: string,
+    contractAddress: string,
     provider = this.defaultProvider
   ) {
     const meta = ERC20Meta;
     this._ERC20Contract = await new ethers.Contract(
-      directDonationAddress,
+      contractAddress,
       meta.abi
     ).connect(provider);
   }
 
   async symbol(
     this: ERC20Interface,
-    address: string,
     caller = this.defaultCaller
   ): Promise<string> {
     this._isContractSet();
     return await (this._ERC20Contract as Contract).connect(caller).symbol();
+  }
+
+  async balanceOf(
+    this: ERC20Interface,
+    address: string,
+    caller = this.defaultCaller
+  ): Promise<any> {
+    this._isContractSet();
+    return await (this._ERC20Contract as Contract)
+      .connect(caller)
+      .balanceOf(address);
   }
 
   _isContractSet(this: ERC20Interface) {
@@ -51,3 +61,5 @@ class ERC20Interface {
         );
   }
 }
+
+export default ERC20Interface;

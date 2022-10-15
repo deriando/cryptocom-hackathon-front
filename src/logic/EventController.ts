@@ -35,17 +35,15 @@ class EventController {
     provider = this.provider,
     caller = this.caller
   ) {
-    if (this.DDMFactoryInstance === null) {
-      const DirectDonationManagerFactoryInstance =
-        new DirectDonationManagerFactoryInterface(
-          caller as Signer,
-          provider as providers.Provider
-        );
-      await DirectDonationManagerFactoryInstance.setContract(
-        import.meta.env.VITE_DIRECT_DONATION_FACTORY_ADDR
+    const DirectDonationManagerFactoryInstance =
+      new DirectDonationManagerFactoryInterface(
+        caller as Signer,
+        provider as providers.Provider
       );
-      this.DDMFactoryInstance = DirectDonationManagerFactoryInstance;
-    }
+    await DirectDonationManagerFactoryInstance.setContract(
+      import.meta.env.VITE_DIRECT_DONATION_FACTORY_ADDR
+    );
+    this.DDMFactoryInstance = DirectDonationManagerFactoryInstance;
   }
 
   async clearDDMFactory(this: EventController) {
@@ -60,14 +58,12 @@ class EventController {
     provider = this.provider,
     caller = this.caller
   ) {
-    if (this.DDManagerInstance === null) {
-      const DirectDonationManagerInstance = new DirectDonationManagerInterface(
-        caller as Signer,
-        provider as providers.Provider
-      );
-      await DirectDonationManagerInstance.setContract(managerAddress);
-      this.DDManagerInstance = DirectDonationManagerInstance;
-    }
+    const DirectDonationManagerInstance = new DirectDonationManagerInterface(
+      caller as Signer,
+      provider as providers.Provider
+    );
+    await DirectDonationManagerInstance.setContract(managerAddress);
+    this.DDManagerInstance = DirectDonationManagerInstance;
   }
   async clearDDManager(this: EventController) {
     this.DDMFactoryInstance = null;
@@ -80,14 +76,12 @@ class EventController {
     provider = this.provider,
     caller = this.caller
   ) {
-    if (this.DirectDonationInstance === null) {
-      const DirectDonationInstance = new DirectDonationInterface(
-        caller as Signer,
-        provider as providers.Provider
-      );
-      await DirectDonationInstance.setContract(donationAddress);
-      this.DirectDonationInstance = DirectDonationInstance;
-    }
+    const DirectDonationInstance = new DirectDonationInterface(
+      caller as Signer,
+      provider as providers.Provider
+    );
+    await DirectDonationInstance.setContract(donationAddress);
+    this.DirectDonationInstance = DirectDonationInstance;
   }
   async clearDirectDonation(this: EventController) {
     this.DDMFactoryInstance = null;

@@ -34,7 +34,7 @@ class DirectDonationManagerInterface {
     caller = this.defaultCaller
   ): Promise<any> {
     this._isContractSet();
-    await (this._directDonationManagerContract as Contract)
+    const tx = await (this._directDonationManagerContract as Contract)
       .connect(caller)
       .createDirectDonation();
 
@@ -54,6 +54,8 @@ class DirectDonationManagerInterface {
         _contractAddress,
       });
     }
+
+    return tx;
   }
 
   //update
@@ -64,7 +66,7 @@ class DirectDonationManagerInterface {
     caller = this.defaultCaller
   ): Promise<any> {
     this._isContractSet();
-    await (this._directDonationManagerContract as Contract)
+    const tx = await (this._directDonationManagerContract as Contract)
       .connect(caller)
       .removeDirectDonation(key);
 
@@ -84,6 +86,7 @@ class DirectDonationManagerInterface {
         _contractAddress,
       });
     }
+    return tx;
   }
 
   //read

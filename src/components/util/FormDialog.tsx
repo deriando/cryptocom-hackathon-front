@@ -9,53 +9,82 @@ import DialogTitle from "@mui/material/DialogTitle";
 
 export interface FormDialogProps {
   open: boolean;
-  setOpen: Function;
   dialogTitle: string;
   dialogContent: string;
-  textboxlabel: string;
-  textboxType: string;
+  textboxes: Array<Textbox>;
   actionButtonText: string;
   dialogCallback: Function;
 }
 
-export interface FromDialogReturn {
+export interface Textbox {
+  label: string;
+  type: string;
+  value?: string;
+}
+
+export interface FormDialogReturn {
   returnType: "ClickedCancel" | "ClickedAction";
-  dialogValue?: string;
+  dialogValue?: Array<Textbox>;
 }
 
 export default function FormDialog(props: FormDialogProps) {
-  const inputRef = useRef("");
+  // const valueList : Array<Array<string>> = (props.textboxes === undefined)? [] : props.textboxes.map( x => [x.label, ""]);
+
+  const stringArr = props.textboxes.map((x) => {
+    return "";
+  });
+  // console.log(valueMap);
+  const [value, setValue] = useState<Array<string>>(stringArr);
 
   const onCancelButtonClick = () => {
-    props.setOpen(false);
     props.dialogCallback({
       returnType: "ClickedCancel",
     });
   };
 
   const onActionButtonClick = () => {
-    props.setOpen(false);
+    const returnValue = props.textboxes.map((x, i) => {
+      x.value = value[i];
+      return x;
+    });
+
     props.dialogCallback({
       returnType: "ClickedAction",
-      dialogValue: inputRef,
+      dialogValue: returnValue,
     });
   };
+
+  function optionalTextField() {
+    if (props.textboxes === undefined) return <></>;
+    return props.textboxes.map((x, i) => {
+      return (
+        <TextField
+          autoFocus
+          key={x.label}
+          margin="dense"
+          label={x.label}
+          type={x.type}
+          fullWidth
+          onChange={(reactObj) => {
+            setValue((current) => {
+              current[i] =
+                reactObj.target.value === undefined
+                  ? ""
+                  : reactObj.target.value;
+              return current;
+            });
+          }}
+        />
+      );
+    });
+  }
 
   return (
     <Dialog open={props.open} onClose={onCancelButtonClick}>
       <DialogTitle>{props.dialogTitle}</DialogTitle>
       <DialogContent>
         <DialogContentText>{props.dialogContent}</DialogContentText>
-        <TextField
-          autoFocus
-          margin="dense"
-          id="name"
-          label={props.textboxlabel}
-          type={props.textboxType}
-          fullWidth
-          variant="standard"
-          inputRef={inputRef}
-        />
+        {optionalTextField()}
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancelButtonClick}>Cancel</Button>

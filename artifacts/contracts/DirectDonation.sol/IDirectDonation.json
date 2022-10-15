@@ -43,6 +43,19 @@
     },
     {
       "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        }
+      ],
+      "name": "LogDeleteAcceptedERC20",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
       "inputs": [],
       "name": "LogDestruction",
       "type": "event"
@@ -178,6 +191,19 @@
         }
       ],
       "name": "LogRemoveAllocation",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        }
+      ],
+      "name": "LogSetAcceptedERC20",
       "type": "event"
     },
     {

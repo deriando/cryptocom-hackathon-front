@@ -17,95 +17,241 @@ import {
 
 import EventControllerSingleton from "../../logic/EventController";
 import DirectDonationInterface from "../../logic/DirectDonation";
-
-// function useCustodianFeature() {
-//   const ECSInstance = EventControllerSingleton.getInstance();
-//   const [custodianFeature, setCustodianFeature] = useState<boolean>(false);
-
-//   function waitingCustodianFeature() {
-//     // ECSInstance.getCustodianFeature()
-//     // .then((data) => {
-//     //   setCustodianFeature(data.custodianFeature === undefined? false: data.custodianFeature);
-//     // })
-//     // .catch((e) => {
-//     setCustodianFeature(false);
-//     //   console.log({
-//     //     errorMessage: e,
-//     //   });
-//     // });
-//   }
-
-//   function toggleCustodianFeature() {
-//     ECSInstance.setCustodianFeature(!custodianFeature)
-//       .then((data) => {
-//         console.log(data);
-//       })
-//       .catch((e) => {
-//         console.log({
-//           errorMessage: e,
-//         });
-//       });
-//   }
-
-//   useEffect(() => {
-//     waitingCustodianFeature();
-//   }, [custodianFeature]);
-
-//   return { custodianFeature, toggleCustodianFeature };
-// }
+import ERC20Interface from "../../logic/ERC20";
+import { Signer, providers, Contract } from "ethers";
+import FormDialog, {
+  FormDialogProps,
+  Textbox,
+  FormDialogReturn,
+} from "../util/FormDialog";
 
 export interface TokenMeta {
   contractAddress: string;
   tokenSymbol?: string;
 }
 
-function useComponentState(Tokens: Array<TokenMeta>, reloadTokens: Function) {
+function useComponentState() {
   const ECSInstance = EventControllerSingleton.getInstance();
-  const [trigger, setTrigger] = useState<null>(null);
+  const [trigger, setTrigger] = useState<boolean>(false);
   const [firstBoot, setFirstBoot] = useState<boolean>(true);
   const [tokenMetaList, setTokenMetaList] = useState<null | Array<TokenMeta>>(
     null
   );
   const [custodianFeature, setCustodianFeature] = useState<boolean>(false);
 
+  const [dialog, setDialog] = useState<FormDialogProps>({
+    open: false,
+    dialogTitle: "",
+    dialogContent: "",
+    textboxes: [],
+    actionButtonText: "",
+    dialogCallback: () => {},
+  });
+
   async function onFirstBootRun() {
     try {
       console.log(`start up Allocation Component`);
-      await Promise.all([hydrateTokenMeta(), syncCustodianFeature()]);
+      await Promise.all([generateTokenList(), syncOnChainCustodianFeature()]);
     } catch (e) {
       console.log(e);
     }
   }
 
-  async function hydrateTokenMeta() {
-    const contract = ECSInstance.DirectDonationInstance;
-    const mapPromises = Tokens.map((x) => {
-      return (contract as DirectDonationInterface).getAllocationValue(
-        x.contractAddress
-      );
-    });
-    const promisesData = await Promise.all(mapPromises);
-    const exportData = Tokens.map((x, i) => {
-      return {
-        contractAddress: x.contractAddress,
-        percentValue: promisesData[i],
-      };
-    });
+  async function generateTokenList() {
+    const tokensTemplate = await getTokenList();
+    const tokensData = await hydrateTokenMeta(tokensTemplate);
+    setTokenMetaList(tokensData);
   }
 
-  async function getOnChainCustodianFeature() {}
+  async function getTokenList() {
+    const contract: DirectDonationInterface =
+      ECSInstance.DirectDonationInstance as DirectDonationInterface;
+    const data = await contract.getAcceptedERC20List();
+    const exportData = data.map((x) => {
+      return { contractAddress: x };
+    });
+    return exportData;
+  }
 
-  async function syncCustodianFeature() {}
+  async function hydrateTokenMeta(tokenList: Array<TokenMeta>) {
+    const mapPromises = tokenList.map(async (x) => {
+      const contract = new ERC20Interface(
+        ECSInstance.caller as Signer,
+        ECSInstance.provider as providers.Provider
+      );
+      await contract.setContract(x.contractAddress);
+      return await contract.symbol();
+    });
+    const promisesData = await Promise.all(mapPromises);
+    const exportData = tokenList.map((x, i) => {
+      return {
+        contractAddress: x.contractAddress,
+        tokenSymbol: promisesData[i],
+      };
+    });
+    return exportData;
+  }
 
-  async function toggleCustodianFeatureSwitch() {}
+  async function getCustodianFeature() {
+    const contract =
+      ECSInstance.DirectDonationInstance as DirectDonationInterface;
+    return await contract.CustodianFeature();
+  }
 
-  async function onPayoutButtonClick() {}
+  async function syncOnChainCustodianFeature() {
+    const custodianFeature = await getCustodianFeature();
+    setCustodianFeature(custodianFeature);
+  }
 
-  async function onWithdrawButtonClick() {}
+  async function setOnChainCustodianFeature(state: boolean) {
+    const contract =
+      ECSInstance.DirectDonationInstance as DirectDonationInterface;
+    await contract.setCustodianFeature(
+      state,
+      setOnChainCustodianFeatureCallback
+    );
+  }
 
-  async function onDeleteButtonClick() {}
+  async function setOnChainCustodianFeatureCallback(data: any) {
+    //data on not in use
+    syncOnChainCustodianFeature();
+  }
 
-  async function onCreateButtonClick() {}
+  async function toggleCustodianFeatureSwitch() {
+    await setOnChainCustodianFeature(!custodianFeature);
+  }
+
+  async function onPayoutButtonClick(tokenAddress: string) {
+    try {
+      const totalSum = await getCurrentBalance(tokenAddress);
+      await payoutContractBalance(tokenAddress, totalSum);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  async function getCurrentBalance(tokenAddress: string) {
+    const contract =
+      ECSInstance.DirectDonationInstance as DirectDonationInterface;
+    const contractAddress = (contract._directDonationContract as Contract)
+      .address;
+    if (tokenAddress === "") {
+      return await (ECSInstance.provider as providers.Provider).getBalance(
+        contractAddress
+      );
+    } else {
+      const ERC20 = new ERC20Interface(
+        ECSInstance.caller as Signer,
+        ECSInstance.provider as providers.Provider
+      );
+      await ERC20.setContract(tokenAddress);
+      return await ERC20.balanceOf(contractAddress);
+    }
+  }
+
+  async function payoutContractBalance(tokenAddress: string, sum: number) {
+    const contract =
+      ECSInstance.DirectDonationInstance as DirectDonationInterface;
+    if (tokenAddress === "")
+      await contract.payoutContractBalance(
+        sum,
+        undefined,
+        payoutContractBalanceCallback
+      );
+    else
+      await contract.payoutContractBalance(
+        sum,
+        tokenAddress,
+        payoutContractBalanceCallback
+      );
+  }
+
+  async function payoutContractBalanceCallback(data: any) {
+    await generateTokenList();
+  }
+
+  async function onWithdrawButtonClick(tokenAddress: string) {
+    // try{
+    //   const totalSum = await getCurrentBalance(tokenAddress);
+    //   await withdrawContractBalance(tokenAddress, totalSum);
+    // }catch(e){
+    //   console.log(e);
+    // }
+  }
+  async function withdrawContractBalance() {}
+
+  async function withdrawContractBalanceCallback() {}
+
+  async function onDeleteButtonClick(tokenAddress: string) {
+    try {
+      await deleteAcceptedERC20(tokenAddress);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  async function deleteAcceptedERC20(tokenAddress: string) {
+    const contract =
+      ECSInstance.DirectDonationInstance as DirectDonationInterface;
+    await contract.deleteAcceptedERC20(
+      tokenAddress,
+      deleteAcceptedERC20Callback
+    );
+  }
+
+  async function deleteAcceptedERC20Callback() {
+    // try new callback
+    await generateTokenList();
+  }
+
+  async function onCreateButtonClick() {
+    //Dialog Widget call
+    setDialog((x) => {
+      x.open = true;
+      (x.dialogTitle = "Add An Accepted Token"),
+        (x.dialogContent = "Enter your Token Address to start accepting them."),
+        (x.actionButtonText = "Create"),
+        (x.dialogCallback = onDialogCallback);
+      x.textboxes = [
+        {
+          label: "Token Address",
+          type: "",
+        },
+      ];
+      return x;
+    });
+    setTrigger((x) => !x);
+
+    async function onDialogCallback(dataForm: FormDialogReturn) {
+      setDialog((x) => {
+        x.open = false;
+        x.dialogCallback = () => {};
+        return x;
+      });
+      setTrigger((x) => !x);
+
+      if (dataForm.returnType === "ClickedAction") {
+        try {
+          const tokenAddress: string = (
+            dataForm.dialogValue as Array<Textbox>
+          )[0].value as string;
+          await setAcceptedERC20(tokenAddress);
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    }
+  }
+
+  async function setAcceptedERC20(tokenAddress: string) {
+    const contract =
+      ECSInstance.DirectDonationInstance as DirectDonationInterface;
+    await contract.setAcceptedERC20(tokenAddress, setAcceptedERC20Callback);
+  }
+
+  async function setAcceptedERC20Callback(data: any) {
+    await generateTokenList();
+  }
 
   useEffect(() => {
     if (firstBoot) {
@@ -113,7 +259,15 @@ function useComponentState(Tokens: Array<TokenMeta>, reloadTokens: Function) {
       setFirstBoot(false);
     }
   });
-  return { tokenMetaList, custodianFeature, toggleCustodianFeatureSwitch };
+  return {
+    dialog,
+    tokenMetaList,
+    custodianFeature,
+    toggleCustodianFeatureSwitch,
+    onCreateButtonClick,
+    onDeleteButtonClick,
+    onPayoutButtonClick,
+  };
 }
 
 interface GeneralSettingProps {
@@ -121,11 +275,18 @@ interface GeneralSettingProps {
   reloadTokens: Function;
 }
 
-function GeneralSetting(props: GeneralSettingProps) {
+function GeneralSetting() {
   //Hooks
   const [selected, setSelected] = useState("");
-  const { tokenMetaList, custodianFeature, toggleCustodianFeatureSwitch } =
-    useComponentState(props.tokens, props.reloadTokens);
+  const {
+    dialog,
+    tokenMetaList,
+    custodianFeature,
+    toggleCustodianFeatureSwitch,
+    onCreateButtonClick,
+    onDeleteButtonClick,
+    onPayoutButtonClick,
+  } = useComponentState();
   // const addressList = props.contractAddresses;
 
   function ListView() {
@@ -152,7 +313,10 @@ function GeneralSetting(props: GeneralSettingProps) {
               justifyContent={"space-between"}
               width={"100%"}
             >
-              <ListItemText primary={x.tokenSymbol} />
+              <ListItemText
+                primary={x.tokenSymbol}
+                secondary={x.contractAddress}
+              />
               <ButtonGroup
                 sx={{ ml: 2 }}
                 size="small"
@@ -165,6 +329,9 @@ function GeneralSetting(props: GeneralSettingProps) {
                       ? true
                       : false
                   }
+                  onClick={() => {
+                    onPayoutButtonClick(x.contractAddress);
+                  }}
                 >
                   Payout
                 </Button>
@@ -245,6 +412,9 @@ function GeneralSetting(props: GeneralSettingProps) {
                     ? true
                     : false
                 }
+                onClick={() => {
+                  onPayoutButtonClick("");
+                }}
               >
                 Payout
               </Button>
@@ -253,63 +423,79 @@ function GeneralSetting(props: GeneralSettingProps) {
           </Box>
         </ListItem>
         {ItemGenerator()}
-        {NoTokenLayout()}
+        {/* {NoTokenLayout()} */}
       </List>
     );
   }
 
   return (
-    <Card
-      sx={{
-        p: 1,
-        m: 1,
-      }}
-    >
-      <CardContent>
-        <Box
-          display={"flex"}
-          flexDirection={"row"}
-          justifyContent={"flex-start"}
-          width={"100%"}
-          textAlign={"center"}
-        >
-          <Typography variant="h6" component="div">
-            General Setting
-          </Typography>
-        </Box>
-        {ListView()}
-        <Divider></Divider>
-        <Box
-          display={"flex"}
-          flexDirection={"row"}
-          flexWrap={"wrap"}
-          justifyContent={"space-between"}
-          alignItems={"center"}
-          textAlign={"center"}
-          sx={{
-            mt: 1,
-          }}
-        >
-          <FormControlLabel
-            control={
-              <Switch
-                checked={custodianFeature}
-                onChange={() => {
-                  toggleCustodianFeatureSwitch();
-                }}
-              />
-            }
-            label="Custodian Feature"
-          />
-
-          <Box>
-            <Button disabled={selected === "" ? true : false}>Delete</Button>
-            <Button>Create</Button>
+    <>
+      <FormDialog
+        open={dialog.open}
+        dialogTitle={dialog.dialogTitle}
+        dialogContent={dialog.dialogContent}
+        textboxes={dialog.textboxes}
+        actionButtonText={dialog.actionButtonText}
+        dialogCallback={dialog.dialogCallback}
+      ></FormDialog>
+      <Card
+        sx={{
+          p: 1,
+          m: 1,
+        }}
+      >
+        <CardContent>
+          <Box
+            display={"flex"}
+            flexDirection={"row"}
+            justifyContent={"flex-start"}
+            width={"100%"}
+            textAlign={"center"}
+          >
+            <Typography variant="h6" component="div">
+              General Setting
+            </Typography>
           </Box>
-        </Box>
-      </CardContent>
-    </Card>
+          {ListView()}
+          <Divider></Divider>
+          <Box
+            display={"flex"}
+            flexDirection={"row"}
+            flexWrap={"wrap"}
+            justifyContent={"space-between"}
+            alignItems={"center"}
+            textAlign={"center"}
+            sx={{
+              mt: 1,
+            }}
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={custodianFeature}
+                  onChange={() => {
+                    toggleCustodianFeatureSwitch();
+                  }}
+                />
+              }
+              label="Custodian Feature"
+            />
+
+            <Box>
+              <Button
+                onClick={() => {
+                  onDeleteButtonClick(selected);
+                }}
+                disabled={selected === "" ? true : false}
+              >
+                Delete
+              </Button>
+              <Button onClick={onCreateButtonClick}>Create</Button>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </>
   );
 }
-
 export default GeneralSetting;

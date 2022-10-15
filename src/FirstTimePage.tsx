@@ -55,7 +55,7 @@ function usePageState() {
   }
 
   async function createMyDDManagerCallback(data: any) {
-    await ECSInstance.setDDManager(data._directDonationManagerContract);
+    await ECSInstance.setDDManager(data._contractAddress);
     nav(`/Manager`);
   }
 

@@ -20,16 +20,12 @@ function usePageState() {
   const ECSInstance = EventControllerSingleton.getInstance();
   const [trigger, setTrigger] = useState<null>(null);
   const [firstBoot, setFirstBoot] = useState<boolean>(true);
-  const [tokenList, setTokenList] = useState<null | Array<TokenMeta>>(null);
-  const [allocationList, setAllocationList] =
-    useState<null | Array<AllocationMeta>>(null);
   const nav = useNavigate();
 
   async function onFirstBootRun() {
     try {
       console.log(`start up Contract Page`);
       redirectForMissingData();
-      await Promise.all([generateTokenList(), generateAllocationList()]);
     } catch (e) {
       console.log(e);
     }
@@ -65,26 +61,6 @@ function usePageState() {
     }
   }
 
-  async function generateTokenList() {
-    const contract: DirectDonationInterface =
-      ECSInstance.DirectDonationInstance as DirectDonationInterface;
-    const data = await contract.getAcceptedERC20List();
-    const exportData = data.map((x) => {
-      return { contractAddress: x };
-    });
-    setTokenList(exportData);
-  }
-
-  async function generateAllocationList() {
-    const contract: DirectDonationInterface =
-      ECSInstance.DirectDonationInstance as DirectDonationInterface;
-    const data = await contract.getWalletList();
-    const exportData = data.map((x) => {
-      return { walletAddress: x };
-    });
-    setAllocationList(exportData);
-  }
-
   useEffect(() => {
     if (firstBoot) {
       onFirstBootRun();
@@ -93,42 +69,11 @@ function usePageState() {
   });
   return {
     contractAddress,
-    tokenList,
-    allocationList,
-    generateTokenList,
-    generateAllocationList,
   };
 }
 
 function DonationPage() {
-  const {
-    contractAddress,
-    tokenList,
-    allocationList,
-    generateTokenList,
-    generateAllocationList,
-  } = usePageState();
-
-  function loadingGeneralSetting() {
-    if (tokenList === null)
-      return <Typography>Loading General Setting Card.</Typography>;
-
-    return (
-      <GeneralSetting tokens={tokenList} reloadTokens={generateTokenList} />
-    );
-  }
-
-  function loadingAllocationSetting() {
-    if (allocationList === null)
-      return <Typography>Loading General Setting Card.</Typography>;
-
-    return (
-      <AllocationSetting
-        allocations={allocationList}
-        reloadAllocations={generateAllocationList}
-      />
-    );
-  }
+  const { contractAddress } = usePageState();
 
   if (window.ethereum === null)
     return (
@@ -174,8 +119,8 @@ function DonationPage() {
           alignItems={"flex-start"}
           textAlign={"center"}
         >
-          {loadingGeneralSetting()}
-          {loadingAllocationSetting()}
+          <GeneralSetting></GeneralSetting>
+          <AllocationSetting></AllocationSetting>
         </Box>
         <Divider></Divider>
 

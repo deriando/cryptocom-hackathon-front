@@ -29,6 +29,12 @@ interface CallToActionCard {
 }
 
 function CallToActionCard(props: CallToActionCard) {
+  const nav = useNavigate();
+  const homeURL: string = import.meta.env.VITE_URL;
+  const callToActionLink =
+    homeURL.slice(-1) === "/"
+      ? `${homeURL.slice(0, -1)}/DonationWidget/${props.contractAddress}`
+      : `${homeURL}/DonationWidget/${props.contractAddress}`;
   return (
     <Card
       sx={{
@@ -44,7 +50,7 @@ function CallToActionCard(props: CallToActionCard) {
             label={"Widget link"}
             id="outlined-basic"
             variant="outlined"
-            value={"http://test.com/widget/0xfnqjwflje2j3krj3i"}
+            value={callToActionLink}
             fullWidth
             size="small"
           />
@@ -58,7 +64,14 @@ function CallToActionCard(props: CallToActionCard) {
             sx={{ mt: 1 }}
           >
             <Button size="small">Share</Button>
-            <Button size="small">Go to Widget</Button>
+            <Button
+              size="small"
+              onClick={() => {
+                nav(`../DonationWidget/${props.contractAddress}`);
+              }}
+            >
+              Go to Widget
+            </Button>
           </Box>
         </Box>
       </CardContent>
