@@ -1,4 +1,4 @@
-# Crypto.com Hackathon App
+#some-awesome-sodium App
 
 ## Getting started (Development)
 
