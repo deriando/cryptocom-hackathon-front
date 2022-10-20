@@ -108,6 +108,8 @@ function usePageState() {
 
   async function onDonationClick(tokenAddress: string, sum: BigNumber) {
     try {
+      console;
+      console.log(sum);
       await donate(tokenAddress, sum);
     } catch (e) {
       console.log(e);
@@ -217,7 +219,10 @@ function DonationWidget() {
         <Button
           onClick={() => {
             console.log(select.contractAddress);
-            onDonationClick(select.contractAddress, BigNumber.from(value));
+            onDonationClick(
+              select.contractAddress,
+              BigNumber.from(value + "000000000000000000")
+            );
           }}
         >
           Donate
